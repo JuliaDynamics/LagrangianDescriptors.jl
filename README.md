@@ -7,9 +7,9 @@ Here are some examples on a periodically forced Duffing system.
 ![Duffing 1](examples/img/duffing1.png)
 
 ![Duffing 2](examples/img/duffing2.png)
-## Idea
+## Implementation
 
-Here are the two initial ideas.
+Here are the two initial ideas for implementing such method.
 
 ### Augmenting the system
 

@@ -1,0 +1,4 @@
+name = "LagrangianDescriptors"
+uuid = "a4733523-375c-482b-97f9-45e4d053eacd"
+authors = ["Ricardo Rosa <rmsrosa@gmail.com>"]
+version = "0.1.0"

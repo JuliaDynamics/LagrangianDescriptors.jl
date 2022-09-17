@@ -16,20 +16,20 @@ Here are the two initial ideas for implementing such method.
 We augment the system and compute the descriptors along with the solution.
 
 1. One builds a problem `prob` of a given type from `SciMLBase.jl`, say an `ODEProblem` for `du/dt = f(u, p, t)`.
-2. Then we pass it to `ldprob = LDProblem(prob, M, uu)`, where `M = M(u, p, t)` is the descriptor, which is a scalar function, e.g. `M(u, p, t) = norm(f(u, p, t))`, and `uu` is some iterator with a collection of initial conditions (e.g. an `Array` for a mesh in phase space or a portion of a sub-manifold of the phase space). 
+2. Then we pass it to `ldprob = LDProblem(prob, M, uu)`, where `M = M(du, u, p, t)` is the (infinitesimal) descriptor, which is a scalar function, e.g. `M(du, u, p, t) = norm(du)`, and `uu` is some iterator with a collection of initial conditions (e.g. an `Array` for a mesh in phase space or a portion of a sub-manifold of the phase space). 
 3.  `LDProblem` uses `prob.f` and `prob.tspan` to create, via `ComponentArrays`,  a new `ODEProblem` for an augmented system of the form
 
 $$
 \begin{cases}
 \displaystyle \frac{du}{dt} = f(u, p, t) \\ \\
 \displaystyle \frac{dv}{dt}  = -f(v, p, 2t_0-t) \\ \\
-\displaystyle \frac{dL_f}{dt}  = L(u,p,t) \\ \\
-\displaystyle \frac{dL_b}{dt}  = L(v,p,t) \\
+\displaystyle \frac{dL_f}{dt}  = M(u, p, t) \\ \\
+\displaystyle \frac{dL_b}{dt}  = M(v, p, t) \\
 \end{cases}
 $$
 
-5. Notice $v$ solves the system backwards. If `tspan = (t0, tf)`, then $v$ solves it backwards in the interval `(2t0 - tf, t0)`, since `2t0 - tf = t0 - (tf - t0)`. So, we solve the system forwards and backwards at the same time.
-6. $L_f$ and $L_b$ are the forward and backward integrations of the Lagrangian descriptor.
+5. Notice $v$ solves the system backwards. If `tspan = (t0, tf)`, then $v$ solves it backwards in the interval `(2t0 - tf, t0) = (t0 - (tf - t_0), t_0)`. So, we solve the system forwards and backwards at the same time.
+6. The forward and backward Lagrangian descriptors `L_f` and `L_b` are the forward and backward integrations of the infinitesimal descriptor `M`.
 7. Then, solving an `LDProblem` works via an `EnsembleProblem`, where at each new solve, a new initial condition is picked.
 8. At the end of each of those solves, we only need to save the values of `Lf[end]` and `Lb[end]`.
 9. We can visualize the Lagrangian descriptor using a heatmap of `Lf[end]`, `Lb[end]` or `Lf[end] + Lb[end]`.

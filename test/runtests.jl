@@ -2,7 +2,7 @@ using OrdinaryDiffEq, LagrangianDescriptors, Test
 using LinearAlgebra: norm
 using QuadGK: quadgk
 
-@testset "OOP Linear ODEProblem" begin
+@testset "Linear OOP ODEProblem" begin
     f = function (u, p, t) p * u end
     p = 0.1
     t0 = 0.0
@@ -41,7 +41,7 @@ using QuadGK: quadgk
     @test augsol.u[end].lbwd ≈ p * u0^2 * (1 - exp(-2 * p * tf)) / 2 atol=0.01
 end
 
-@testset "OOP Cubic ODEProblem" begin
+@testset "Cubic OOP ODEProblem" begin
     f = function (u, p, t) u - u^3 end
     t0 = 0.0
     tf = 5.0

@@ -1,4 +1,5 @@
 using OrdinaryDiffEq, LagrangianDescriptors, Test
+using LagrangianDescriptors: augmentprob
 using LinearAlgebra: norm
 using QuadGK: quadgk
 using BenchmarkTools: @btime

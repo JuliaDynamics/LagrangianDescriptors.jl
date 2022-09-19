@@ -106,7 +106,7 @@ end
     @test augsol.u[end].lbwd ≈ sum(p .* u0.^2 .* (1 .- exp.(-2 * p * tf)) / 2) rtol=0.01
 end
 
-@testset "Cubic OOP ODEProblem" begin
+@testset "Cubic IIP ODEProblem" begin
     f = function (u) u - u^3 end
     f! = function (du, u, p, t) du .= f.(u) end
     t0 = 0.0

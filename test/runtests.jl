@@ -1,6 +1,7 @@
 using OrdinaryDiffEq, LagrangianDescriptors, Test
 using LinearAlgebra: norm
 using QuadGK: quadgk
+using BenchmarkTools: @btime
 
 @testset "Linear OOP ODEProblem" begin
     f = function (u, p, t) p * u end
@@ -131,4 +132,43 @@ end
     @test all(≤(0.01), augsol.u[end].bwd)
     @test augsol.u[end].lfwd ≈ first(quadgk(t -> M(f.(solfwd(t)), nothing, nothing, nothing), 0.0, 5.0)) rtol = 0.01
     @test augsol.u[end].lbwd ≈ first(quadgk(t -> M(f.(solbwd(t)), nothing, nothing, nothing), 0.0, 5.0)) atol = 0.01
+end
+
+@testset "Benchmarks" begin
+    f = function (u) u - u^3 end
+    f! = function (du, u, p, t) du .= f.(u) end
+    t0 = 0.0
+    tf = 5.0
+    tspan = (t0, tf)
+    n = 5
+    u0 = 0.1 .+ 0.7rand(n)
+    prob = ODEProblem(f!, u0, tspan)
+    @info "Create forward ODE problem:"
+    @btime ODEProblem($f!, $u0, $tspan)
+    tspanbwd = (tf, t0)
+    probbwd = remake(prob, tspan = (tf, t0))
+    @info "Remake for backward ODE problem:"
+    @btime remake($prob, tspan = $((tf, t0)))
+    solfwd = @test_nowarn solve(prob, Tsit5())
+    solbwd = @test_nowarn solve(probbwd, Tsit5())
+    @info "Solve forward ODE problem:"
+    @btime solve($prob, $(Tsit5()))
+    @info "Solve backward ODE problem:"
+    @btime solve($probbwd, $(Tsit5()))
+
+    M = function (du, u, p, t) norm(du) end
+    augprob = @test_nowarn augmentprob(prob, M)
+    @info "Create augmented ODE problem:"
+    @btime augmentprob($prob, $M)
+    augsol = @test_nowarn solve(augprob, Tsit5())
+    @info "Solve Augmented ODE problem:"
+    @btime solve($augprob, $(Tsit5()))
+    postprocfwd = function () first(quadgk(t -> M(f.(solfwd(t)), nothing, nothing, nothing), 0.0, 5.0)) end
+    @test augsol.u[end].lfwd ≈ postprocfwd() rtol = 0.01
+    @info "Postprocessing for forward Lagrangian descriptor:"
+    @btime $(postprocfwd())
+    postprocbwd = function () first(quadgk(t -> M(f.(solbwd(t)), nothing, nothing, nothing), 0.0, 5.0)) end
+    @test augsol.u[end].lbwd ≈ postprocbwd() atol = 0.01
+    @info "Postprocessing for backward Lagrangian descriptor:"
+    @btime $(postprocbwd())
 end

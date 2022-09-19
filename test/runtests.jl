@@ -163,12 +163,12 @@ end
     augsol = @test_nowarn solve(augprob, Tsit5())
     @info "Solve Augmented ODE problem:"
     @btime solve($augprob, $(Tsit5()))
-    postprocfwd = function () first(quadgk(t -> M(f.(solfwd(t)), nothing, nothing, nothing), 0.0, 5.0)) end
-    @test augsol.u[end].lfwd ≈ postprocfwd() rtol = 0.01
+
+    postproc = function (sol, f, M, tspan) first(quadgk(t -> M(f.(sol(t)), nothing, nothing, nothing), first(tspan), last(tspan))) end
+    @test augsol.u[end].lfwd ≈ postproc(solfwd, f, M, tspan) rtol = 0.01
     @info "Postprocessing for forward Lagrangian descriptor:"
-    @btime $(postprocfwd())
-    postprocbwd = function () first(quadgk(t -> M(f.(solbwd(t)), nothing, nothing, nothing), 0.0, 5.0)) end
-    @test augsol.u[end].lbwd ≈ postprocbwd() atol = 0.01
+    @btime $postproc($solfwd, $f, $M, $tspan)
+    @test augsol.u[end].lbwd ≈ postproc(solbwd, f, M, tspan) atol = 0.01
     @info "Postprocessing for backward Lagrangian descriptor:"
-    @btime $(postprocbwd())
+    @btime $postproc($solbwd, $f, $M, $tspan)
 end

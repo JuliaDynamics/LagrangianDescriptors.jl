@@ -113,7 +113,7 @@ end
     tf = 5.0
     tspan = (t0, tf)
     n = 5
-    u0 = 0.1 .+ 0.8rand(n)
+    u0 = 0.1 .+ 0.7rand(n)
     prob = ODEProblem(f!, u0, tspan)
     tspanbwd = (tf, t0)
     probbwd = remake(prob, tspan = (tf, t0))

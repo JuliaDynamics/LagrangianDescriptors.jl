@@ -1,4 +1,5 @@
-using OrdinaryDiffEq, LagrangianDescriptors, Test
+using LagrangianDescriptors
+using OrdinaryDiffEq, Test
 using LagrangianDescriptors: augmentprob
 using LinearAlgebra: norm
 using QuadGK: quadgk
@@ -172,4 +173,19 @@ end
     @test augsol.u[end].lbwd ≈ postproc(solbwd, f, M, tspan) atol = 0.01
     @info "Postprocessing for backward Lagrangian descriptor:"
     @btime $postproc($solbwd, $f, $M, $tspan)
+end
+
+@testset "Lagrangian Descriptor linear OOP ODE" begin
+    f = function (u, p, t)  u end
+    p = 0.1
+    t0 = 0.0
+    tf = 5.0
+    tspan = (t0, tf)
+    u0 = 0.5
+    prob = ODEProblem(f, u0, tspan)
+
+    M = function (du, u, p, t) sum(abs2, du) end
+    uu0 = range(-1.0, 1.0, length=101)
+    lagprob = @test_nowarn LagrangianDescriptorProblem(prob, M, uu0)
+    lagsol = @test_nowarn solve(lagprob, Tsit5())
 end

@@ -1,6 +1,11 @@
+using Pkg
+Pkg.activate("examples")
+include("../src/LagrangianDescriptors.jl")
+using .LagrangianDescriptors
+using .LagrangianDescriptors: augmentprob
 using OrdinaryDiffEq, Plots
-using LagrangianDescriptors
 using LinearAlgebra: norm
+using DiffEqBase
 
 # Simple cubic "reaction-diffusion" equation u' = u - u^3
 
@@ -10,24 +15,36 @@ u0 = 0.5
 tspan = (0.0, 5.0)
 prob = ODEProblem(f, u0, tspan)
 
-sol = solve(prob, Tsit5())
+# sol = solve(prob, Tsit5())
 
-plot(sol)
+#plot(sol)
 
 # augmented
 
 M(du, u, p, t) = sum(abs2, du) # local descriptor
 
-augprob = augmentprob(prob, M; direction=:backward)
+augprob = LagrangianDescriptors.augmentprob(prob, M)
 
 augsol = solve(augprob, Tsit5())
 
-plot(augsol)
-
+#plot(augsol)
+#= 
 plot(augsol, idxs=(0,1))
 plot!(augsol, idxs=(0,2))
-plot(augsol, idxs=(0,3,4))
+plot(augsol, idxs=(0,3))
+plot!(augsol, idxs=(0,4)) =#
 
+#
+
+uu0 = range(-1.0, 1.0, length=101)
+lagprob = LagrangianDescriptorProblem(prob, M, uu0)
+# solve(lagprob.ensprob, Tsit5(), trajectories=length(uu0))
+lagsol = solve(lagprob, Tsit5())
+#= 
+plot(uu0, getindex.(lagsol.u,:lfwd), label="forward Lagrangian descriptor")
+plot!(uu0, getindex.(lagsol.u,:lbwd), label="backward Lagrangian descriptor")
+plot!(uu0, sum.(lagsol.u), label="Lagrangian descriptor")
+plot!(uu0, getindex.(lagsol.u, :lfwd) - getindex.(lagsol.u, :lbwd), label="Difference lfwd - lbwd")
 
 function prob_func(prob,i,repeat)
     uu0 = range(-1.0, 1.0, length=101)
@@ -45,3 +62,4 @@ ensaugsol = solve(ensaugprob, Tsit5(), trajectories = 100)
 plot(1:100, i -> getindex(ensaugsol[i], :lfwd))
 
 plot(1:100, i -> getindex(ensaugsol[i], :lbwd))
+ =#

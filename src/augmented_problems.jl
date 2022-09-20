@@ -1,5 +1,5 @@
-# This file is for `aumengtprob` of all types. Currently it is only implemented for `ODEProblem`.
-
+# This file is for `aumengtprob` of all types.
+# Currently it is only implemented for `ODEProblem`.
 
 """
     augmentprob(prob::ODEProblem, M; direction::Symbol=:both

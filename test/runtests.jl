@@ -136,7 +136,7 @@ end
     @test augsol.u[end].lbwd ≈ first(quadgk(t -> M(f.(solbwd(t)), nothing, nothing, nothing), 0.0, 5.0)) atol = 0.01
 end
 
-#= @testset "Benchmarks" begin
+#= @testset "benmarks" begin
     f = function (u) u - u^3 end
     f! = function (du, u, p, t) du .= f.(u) end
     t0 = 0.0

@@ -23,9 +23,9 @@ prob = ODEProblem(f, u0, tspan)
 
 M(du, u, p, t) = sum(abs2, du) # local descriptor
 
-augprob = LagrangianDescriptors.augmentprob(prob, M)
+#augprob = LagrangianDescriptors.augmentprob(prob, M)
 
-augsol = solve(augprob, Tsit5())
+#augsol = solve(augprob, Tsit5())
 
 #plot(augsol)
 #= 

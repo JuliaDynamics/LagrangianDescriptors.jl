@@ -136,7 +136,7 @@ end
     @test augsol.u[end].lbwd ≈ first(quadgk(t -> M(f.(solbwd(t)), nothing, nothing, nothing), 0.0, 5.0)) atol = 0.01
 end
 
-@testset "Benchmarks" begin
+#= @testset "Benchmarks" begin
     f = function (u) u - u^3 end
     f! = function (du, u, p, t) du .= f.(u) end
     t0 = 0.0
@@ -173,7 +173,7 @@ end
     @test augsol.u[end].lbwd ≈ postproc(solbwd, f, M, tspan) atol = 0.01
     @info "Postprocessing for backward Lagrangian descriptor:"
     @btime $postproc($solbwd, $f, $M, $tspan)
-end
+end =#
 
 @testset "Lagrangian Descriptor linear OOP ODE" begin
     f = function (u, p, t)  u end
@@ -188,4 +188,5 @@ end
     uu0 = range(-1.0, 1.0, length=101)
     lagprob = @test_nowarn LagrangianDescriptorProblem(prob, M, uu0)
     lagsol = @test_nowarn solve(lagprob, Tsit5())
+    @test_nowarn solve(lagprob, Tsit5(), EnsembleSerial())
 end

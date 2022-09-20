@@ -10,7 +10,7 @@ function (lagsol::LagrangianDescriptorSolution)(direction::Symbol=:both)
     elseif direction == :forward
         return getindex.(lagsol.enssol.u, :lfwd)
     elseif direction == :backward
-        return getindex.(lagsol.ensso.u, :lbwd)
+        return getindex.(lagsol.enssol.u, :lbwd)
     elseif direction == :difference
         return getindex.(lagsol.enssol.u, :lfwd) - getindex.(lagsol.enssol.u, :lbwd)
     else

@@ -16,7 +16,7 @@ function f!(du, u, p, t)
 end
 
 u0 = [0.5, 2.2]
-tspan = (0.0, 100.0)
+tspan = (0.0, 13.0)
 A = 0.3; ω = π
 
 p = (A, ω)
@@ -43,19 +43,12 @@ plot!(augsol, idxs=(0,3,4))
 plot(augsol, idxs=5)
 plot!(augsol, idxs=6)
 
-uu0 = [[x, y] for x in range(-1.2, 1.2, length=251), y in range(-1.0, 1.0, length=201)]
+uu0 = [[x, y] for y in range(-1.0, 1.0, length=301), x in range(-1.8, 1.8, length=301)]
 lagprob = LagrangianDescriptorProblem(prob, M, uu0)
-# solve(lagprob.ensprob, Tsit5(), trajectories=length(uu0))
-lagsol = solve(lagprob, Tsit5())
 
-lsol = fill(0.0, size(uu0)...)
-for i in eachindex(lagsol.enssol.u)
-    lsol[i] = lagsol.enssol.u[i].lfwd
-end
-
-heatmap(getindex.(uu0[:,1], 1), getindex.(uu0[1,:], 2), lsol)
-
+@time lagsol = solve(lagprob, Tsit5())
 
 plot(lagsol)
 plot(lagsol, :forward)
 plot(lagsol, :backward)
+plot(lagsol, :difference)

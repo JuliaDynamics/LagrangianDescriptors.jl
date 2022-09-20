@@ -1,10 +1,16 @@
+# This file is for `aumengtprob` of all types. Currently it is only implemented for `ODEProblem`.
+
 
 """
-    augmentprob(prob::ODEProblem, M)
+    augmentprob(prob::ODEProblem, M; direction::Symbol=:both
 
 Create an augmented `ODEProblem` by aggregating the forward and backward Lagrangian descriptors to the given `ODEProblem`.
 
-More precisely, with given `f = prob.f` and `u0 = prob.u0` and `tspan = prob.tspan`, an augmented `ODEProblem` is created ... ,
+More precisely, with given `f = prob.f` and `u0 = prob.u0` and `tspan = prob.tspan`, an augmented `ODEProblem` is that solves the forward and backward ODE and the forward and backward Lagrangian descriptors simultaneously.
+
+The (global) Lagrangian descriptors are based on the provided local descriptor `M=M(du, u, p, t)`. The (forward/backward) Lagrangian descriptor is the time-integration of the local descriptor along the (forward/backward) trajectory.
+
+If `direction=:forward` or `direction=:backward` are given, then only the forward or backard problem is constructed in the augmented system. The default is `direction=:both`, where both directions are considered.
 """
 function augmentprob(prob::ODEProblem, M; direction::Symbol=:both)
     if direction == :both

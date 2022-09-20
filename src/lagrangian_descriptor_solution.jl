@@ -1,10 +1,10 @@
-struct LagrangianDescriptorsSolution{T1, T2, T3}
+struct LagrangianDescriptorSolution{T1, T2, T3}
     enssol::T1
     uu0::T2
     direction::T3
 end
 
-function (lagsol::LagrangianDescriptorsSolution)(direction::Symbol=:both)
+function (lagsol::LagrangianDescriptorSolution)(direction::Symbol=:both)
     if direction == :both || direction == :total
         return getindex.(lagsol.enssol.u, :lfwd) + getindex.(lagsol.enssol.u, :lbwd)
     elseif direction == :forward

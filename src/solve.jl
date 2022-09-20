@@ -3,5 +3,5 @@ function solve(prob::LagrangianDescriptorProblem, alg, args...; kwargs...)
     # But it is not needed on mac native and probably not on other systems as well
     # solve(prob.ensprob.prob, alg; kwargs...)
     sol = solve(prob.ensprob, alg, args...; trajectories=length(prob.uu0), kwargs...)
-    return LagrangianDescriptorsSolution(sol, prob.uu0, prob.direction)
+    return LagrangianDescriptorSolution(sol, prob.uu0, prob.direction)
 end

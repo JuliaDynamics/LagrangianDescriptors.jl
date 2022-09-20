@@ -1,6 +1,6 @@
 module LagrangianDescriptors
 
-using SciMLBase, ComponentArrays
+using SciMLBase, ComponentArrays, RecipesBase
 import DiffEqBase: solve, init
 export LagrangianDescriptorProblem
 

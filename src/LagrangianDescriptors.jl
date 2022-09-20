@@ -2,7 +2,7 @@ module LagrangianDescriptors
 
 using SciMLBase, ComponentArrays, RecipesBase
 import DiffEqBase: solve, init
-export LagrangianDescriptorProblem
+export LagrangianDescriptorProblem, LagrangianDescriptorSolution
 
 include("augmented_problems.jl")
 include("lagrangiandescriptor_problems.jl")

@@ -1,13 +1,24 @@
-using Pkg
-Pkg.activate("examples")
-include("../src/LagrangianDescriptors.jl")
-using .LagrangianDescriptors
-using .LagrangianDescriptors: augmentprob
+# # Lagrangian descriptors for a scalar cubic ordinary differential equation
+
+# We apply the method of Lagrangian descriptors to the simple cubic equation
+# $$
+#   \frac{\mathrm{d}x}{\mathrm{d}t} = x - x^3
+# $$
+#
+# This equation has two stationary solutions, corresponding to the fixed points at $x=0$ and
+# $x = 1$, i.e. $x(t) = 0, \forall t$, and $x(t) = 1, \forall t$. The remaining
+# non-stationary solutions can be obtained by separation of variables and partial fractions
+# explicit solution obtained by separation of variables, integrated by partial fractions:
+
 using OrdinaryDiffEq, Plots
 using LinearAlgebra: norm
 using DiffEqBase
 
-# Simple cubic "reaction-diffusion" equation u' = u - u^3
+include("../src/LagrangianDescriptors.jl")
+using .LagrangianDescriptors
+using .LagrangianDescriptors: augmentprob
+
+# Simple cubic equation u' = u - u^3
 
 f(u, p, t) = u - u^3
 
@@ -40,26 +51,8 @@ uu0 = range(-1.0, 1.0, length=101)
 lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 # solve(lagprob.ensprob, Tsit5(), trajectories=length(uu0))
 lagsol = solve(lagprob, Tsit5())
-#= 
-plot(uu0, getindex.(lagsol.u,:lfwd), label="forward Lagrangian descriptor")
-plot!(uu0, getindex.(lagsol.u,:lbwd), label="backward Lagrangian descriptor")
-plot!(uu0, sum.(lagsol.u), label="Lagrangian descriptor")
-plot!(uu0, getindex.(lagsol.u, :lfwd) - getindex.(lagsol.u, :lbwd), label="Difference lfwd - lbwd")
 
-function prob_func(prob,i,repeat)
-    uu0 = range(-1.0, 1.0, length=101)
-    remake(prob,u0 = ComponentVector(fwd=uu0[i], bwd=uu0[i], lfwd=0.0, lbwd=0.0))
-end
-
-function output_func(sol, i)
-    ComponentArray(lfwd = last(sol).lfwd, lbwd=last(sol).lbwd)
-end
-
-ensaugprob = EnsembleProblem(augprob,prob_func=prob_func, output_func=output_func)
-
-ensaugsol = solve(ensaugprob, Tsit5(), trajectories = 100)
-
-plot(1:100, i -> getindex(ensaugsol[i], :lfwd))
-
-plot(1:100, i -> getindex(ensaugsol[i], :lbwd))
- =#
+plot(uu0, getindex.(lagsol.enssol.u,:lfwd), label="forward Lagrangian descriptor")
+plot!(uu0, getindex.(lagsol.enssol.u,:lbwd), label="backward Lagrangian descriptor")
+plot!(uu0, sum.(lagsol.enssol.u), label="Lagrangian descriptor")
+plot!(uu0, getindex.(lagsol.enssol.u, :lfwd) - getindex.(lagsol.enssol.u, :lbwd), label="Difference lfwd - lbwd")

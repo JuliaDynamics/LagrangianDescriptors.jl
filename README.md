@@ -2,15 +2,81 @@
 
 Implementation of the method of **Lagrangian Descriptors** to highlight singular features (e.g. stable or unstable invariant manifolds) of the dynamics of an evolutionary system (such as ordinary or partial differential equations, random equations, or stochastic differential equations).
 
+## Examples
+
 Here are some examples on a periodically forced Duffing system.
 
-![Duffing 1](examples/img/duffing1.png)
+```julia
+using OrdinaryDiffEq, Plots
+using LinearAlgebra: norm
+using LagrangianDescriptors
 
-![Duffing 2](examples/img/duffing2.png)
+function f!(du, u, p, t)
+    x, y = u
+    A, ω = p
+    du[1] = y
+    du[2] = x - x^3 + A * cos(ω * t)
+end
+
+u0 = [0.5, 2.2]
+tspan = (0.0, 13.0)
+A = 0.3; ω = π
+
+p = (A, ω)
+prob = ODEProblem(f!, u0, tspan, p)
+
+M(du, u, p, t) = norm(du)
+
+uu0 = [[x, y] for y in range(-1.0, 1.0, length=301), x in range(-1.8, 1.8, length=301)]
+
+lagprob = LagrangianDescriptorProblem(prob, M, uu0)
+```
+
+With all setup, we may solve it as follows:
+
+```
+julia> @time lagsol = solve(lagprob, Tsit5())
+  4.241800 seconds (204.88 M allocations: 9.173 GiB, 23.40% gc time, 24.99% compilation time)
+```
+
+Then we use the builtin plot recipe to get the heatmap of the Lagrangian descriptors:
+
+```julia
+plot(lagsol)
+```
+
+![Duffing Lagrangian descriptor](examples/img/duffing.png)
+
+We can also plot just the forward and just the backward descriptors with an extra parameter:
+
+```julia
+plot(lagsol, :forward, title="Forward Lagrangian descriptors for the forced Duffing with A=$A and ω=$ω", titlefont=8)
+
+plot(lagsol, :backward, title="Backward Lagrangian descriptors for the forced Duffing with A=$A and ω=$ω", titlefont=8)
+```
+
+![Duffing forward Lagrangian descriptor](examples/img/duffing_forward.png)
+![Duffing backward Lagrangian descriptor](examples/img/duffing_backward.png)
+
+Now, with a different set of parameters and a different window of initial conditions:
+
+```julia
+A = 12.0; ω = 2π; p = (A, ω);
+
+uu0 = [[x, y] for y in range(-0.5, 0.0, length=501), x in range(-0.6, 0.1, length=501)]
+
+lagprob = LagrangianDescriptorProblem(prob, M, uu0)
+
+lagsol = solve(lagprob, Tsit5());
+
+plot(lagsol, title="Lagrangian descriptors - Duffing with A=$A, ω=2π", titlefont=8)
+```
+
+![Duffing Lagrangian descriptor](examples/img/duffing2.png)
 
 ## Current state
 
-Handling of problems of the type `ODEProblem` is essentially done. It is just missing the plot recipe.
+Handling of problems of the type `ODEProblem` is essentially done, including plot recipes for 1D and 2D problems.
 
 What we have so far:
 
@@ -21,11 +87,11 @@ What we have so far:
 ## Roadmap
 
 What is currently missing:
-1. A proper solution type for the result of solving the Lagrangian descriptor problem. Currently, it returns an `EnsembleSolution`. We should have a proper `LagrangianDescriptorSolution` that would include the `EnsembleSolution` as one of its fields and whatever else seems suitable.
-1. A plot recipe;
-1. Lots of tests;
+1. A more flexible plot recipe;
+1. More tests;
 1. Proper documentation;
 1. Support for other types of problems, e.g. `SDEProblem`, `RODEProblem`, mixed differential-algebraic equations, etc.;
+1. Maybe an adaptive method to refine the set `uu0` of initial conditions!;
 1. I don't know whether/how the idea applies to delay type equations, but we should check that out.
 1. Register the package.
 
@@ -38,8 +104,8 @@ Here are the two initial ideas for implementing such method. We ended up impleme
 We augment the system and compute the descriptors along with the solution.
 
 1. One builds a problem `prob` of a given type from `SciMLBase.jl`, say an `ODEProblem` for `du/dt = f(u, p, t)`.
-2. Then we pass it to `ldprob = LagrangianDescriptorProblem(prob, M, uu)`, where `M = M(du, u, p, t)` is the (infinitesimal) descriptor, which is a scalar function, e.g. `M(du, u, p, t) = norm(du)`, and `uu` is some iterator with a collection of initial conditions (e.g. an `Array` for a mesh in phase space or a portion of a sub-manifold of the phase space). 
-3.  `LagrangianDescriptorProblem` uses `prob.f` and `prob.tspan` to create, via `ComponentArrays`,  a new `ODEProblem` for an augmented system of the form
+2. Then we pass it to `ldprob = LagrangianDescriptorProblem(prob, M, uu0)`, where `M = M(du, u, p, t)` is the (infinitesimal) descriptor, which is a scalar function, e.g. `M(du, u, p, t) = norm(du)`, and `uu0` is some iterator with a collection of initial conditions (e.g. an `Array` for a mesh in phase space or a portion of a sub-manifold of the phase space). 
+3.  `LagrangianDescriptorProblem` uses `prob.f`, `prob.p`, `prob.u0`, and `prob.tspan` to create, via `ComponentArrays`, a new `ODEProblem` for an augmented system of the form
 
 $$
 \begin{cases}
@@ -52,7 +118,7 @@ $$
 
 5. Notice $v$ solves the system backwards. If `tspan = (t0, tf)`, then $v$ solves it backwards in the interval `(2t0 - tf, t0) = (t0 - (tf - t_0), t_0)`. So, we solve the system forwards and backwards at the same time.
 6. The forward and backward Lagrangian descriptors `L_f` and `L_b` are the forward and backward integrations of the infinitesimal descriptor `M`.
-7. Then, solving an `LagrangianDescriptorProblem` works via an `EnsembleProblem`, where at each new solve, a new initial condition is picked.
+7. Then, solving a `LagrangianDescriptorProblem` works via an `EnsembleProblem`, where at each new solve, a new initial condition is picked.
 8. At the end of each of those solves, we only need to save the values of `Lf[end]` and `Lb[end]`.
 9. We can visualize the Lagrangian descriptor using a heatmap of `Lf[end]`, `Lb[end]` or `Lf[end] + Lb[end]`.
 10. We can also add a flag to build only the forward descriptor `Lf` or the backward descriptor `Lb`.
@@ -89,7 +155,7 @@ I have decided against implementing this post-processing approach. As I guessed,
   31.834 μs (405 allocations: 39.30 KiB)
 ```
 
-We see that solving both forward and backward equations is a bit faster than solving the augmented system with both forward and backward evolutions, but the latter includes the computations of the Lagrangian descriptors. On the other hand, for post-processing each separate forward and backward evolutions to find the Lagrangian descriptors takes quite a long time. And this was done for a single trajectory. Imagine for the ensemble of solutions, on top of the memory demand. It is not worth it. I will include a separate "post-processing" method for the sake of debugging, development, and comparison, but it will not be part of the main API.
+We see that solving both forward and backward equations is a bit faster than solving the augmented system with both forward and backward evolutions together, but the latter also includes the computations of the Lagrangian descriptors. On the other hand, solving the forward and backward equations separately requires a post-processing step for each forward and backward evolutions to obtain the Lagrangian descriptors, and that takes quite a long time. And this was done for a single trajectory. Imagine for the ensemble of solutions, on top of the memory demand. It is not worth it. I will include a separate "post-processing" method for the sake of debugging, development, and comparison, but it will not be part of the main API.
 
 ## References
 

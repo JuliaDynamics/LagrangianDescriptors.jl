@@ -18,19 +18,13 @@ The next image, for instance, shows the dynamics of a periodically-forced Duffin
 
 The image above can be obtained by first setting up the equation as an `ODEProblem` from `SciML/DifferentialEquations`, then wrapping that as a `LagrangianDescriptorProblem` from `LagrangianDescriptors.jl`, and finally solving it and plotting the result:
 
-```@example
-using Plots
-x = range(0.0, 8π, length=201)
-plot(x, sin)
-```
-
-```julia
+```@example duffing
 using OrdinaryDiffEq, Plots
 using LinearAlgebra: norm
 using LagrangianDescriptors
 ```
 
-```julia
+```@example duffing
 function f!(du, u, p, t)
     x, y = u
     A, ω = p
@@ -45,7 +39,7 @@ A = 0.3; ω = π; p = (A, ω)
 prob = ODEProblem(f!, u0, tspan, p)
 ```
 
-```julia
+```@example duffing
 M(du, u, p, t) = norm(du)
 
 uu0 = [[x, y] for y in range(-1.0, 1.0, length=301), x in range(-1.8, 1.8, length=301)]
@@ -53,23 +47,17 @@ uu0 = [[x, y] for y in range(-1.0, 1.0, length=301), x in range(-1.8, 1.8, lengt
 lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 ```
 
-```julia
-@time lagsol = solve(lagprob, Tsit5())
+```@example duffing
+@info @time lagsol = solve(lagprob, Tsit5())
 ```
 
-```julia
+```@example duffing
 plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation \$\\ddot x = x - x^3 + A\\sin(\\omega t)\$\nwith A=$A and ω=$ω", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
 
-#savefig("img/blah.png"); nothing # hide
+savefig("img/duffing.png"); nothing # hide
 ```
 
-`![](img/blah.png)`
-
-```@example
-1+4
-```
-
-
+![](img/duffing.png)
 
 ## Developers
 

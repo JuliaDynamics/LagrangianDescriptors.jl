@@ -46,7 +46,7 @@ lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 
 @time lagsol = solve(lagprob, Tsit5())
 
-plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation with A=$A and ω=$ω", titlefont=8)
+plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation \$\\ddot x = x - x^3 + A\\sin(\\omega t)\$\nwith A=$A and ω=2π", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
 
 savefig("duffing.png")
 

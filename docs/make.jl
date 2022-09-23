@@ -19,7 +19,7 @@ makedocs(
     modules = [LagrangianDescriptors]
 )
 
-if CI
+if @isdefined(CI) && CI
     deploydocs(
         repo = "github.com/JuliaDynamics/LagrangianDescriptors.jl.git",
         devbranch = "main"

@@ -51,7 +51,7 @@ lagsol = solve(lagprob, Tsit5())
 
 With the solution at hand, we plot the Lagrangian descriptors to visualize the dynamics of the system:
 
-```@example duffing
+```julia duffing
 plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation \$\\ddot x = x - x^3 + A\\sin(\\omega t)\$\nwith A=$A and ω=$ω", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
 
 savefig("img/duffing.png"); nothing # hide

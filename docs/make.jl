@@ -1,7 +1,7 @@
 using Documenter
 using LagrangianDescriptors
 
-makedocs(sitename = "LagrangianDescriptors",
+makedocs(sitename = "LagrangianDescriptors.jl",
          pages = ["Home" => "index.md"
                   "Tutorials" => [
                       "ODEs" => "tutorial_ODEs.md",

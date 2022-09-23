@@ -9,9 +9,9 @@
 
 Implementation of the method of **Lagrangian Descriptors** to highlight singular features (e.g. stable or unstable invariant manifolds) of the dynamics of an evolutionary system (such as ordinary or partial differential equations, random equations, or stochastic differential equations).
 
-## Examples
+## Example
 
-Here are some examples on a periodically forced Duffing system.
+Here in an example on a periodically forced Duffing system.
 
 ```julia
 using OrdinaryDiffEq, Plots
@@ -46,7 +46,7 @@ julia> @time lagsol = solve(lagprob, Tsit5())
   4.241800 seconds (204.88 M allocations: 9.173 GiB, 23.40% gc time, 24.99% compilation time)
 ```
 
-Then we use the builtin plot recipe to get the heatmap of the Lagrangian descriptors:
+Then we use the built-in plot recipe to get the heatmap of the Lagrangian descriptors:
 
 ```julia
 plot(lagsol)

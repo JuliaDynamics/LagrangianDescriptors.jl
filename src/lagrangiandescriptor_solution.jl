@@ -4,6 +4,15 @@ struct LagrangianDescriptorSolution{T1, T2, T3}
     uu0::T2
     direction::T3
 end
+
+Representation of the solution to a `LagrangianDescriptorProblem`.
+
+## Fields
+
+- `enssol`: the `EnsembleSolution` of the associated ensemble problem in `LagrangianDescriptorProblem`.
+- `uu0`: the collection of initial conditions given in 
+the `LagrangianDescriptorProblem`.
+- `direction:` the direction given in the `LagrangianDescriptorProblem`.
 """
 struct LagrangianDescriptorSolution{T1, T2, T3}
     enssol::T1
@@ -11,6 +20,11 @@ struct LagrangianDescriptorSolution{T1, T2, T3}
     direction::T3
 end
 
+"""
+    (lagsol::LagrangianDescriptorSolution)(direction::Symbol=:both)
+
+Depending on the given `direction`, return an array with the sum of the given solution of a Lagrangian descriptor problem, or the forward or the backward or the difference of them, where each element of the array correponds to a given initial condition in the collection of initial conditions.
+"""
 function (lagsol::LagrangianDescriptorSolution)(direction::Symbol=:both)
     if direction == :both || direction == :total
         return getindex.(lagsol.enssol.u, :lfwd) + getindex.(lagsol.enssol.u, :lbwd)

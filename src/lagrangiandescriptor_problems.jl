@@ -1,9 +1,31 @@
 """
-LagrangianDescriptorProblem{T1, T2, T3}
-    ensprob::T1
-    uu0::T2
-    direction::T3
-end
+    LagrangianDescriptorProblem
+
+Defines a Lagrangian descriptor problem associated with a SciML differential equations problem.
+
+## Constructor
+
+    LagrangianDescriptorProblem(prob, M, uu0; direction=:both)
+
+`LagrangianDescriptorProblem` can be constructed by passsing a differential equation problem (currently only `ODEProblem` works, but more problem types will be added), an infinitesimal Lagrangian descriptor with arguments compatible with the differential equation problem, an array of initial conditions, and, optionally, the direction of the flow.
+
+### Arguments
+
+- `prob`: the differential equation problem (e.g. `ODEProblem`, `SDEProblem`, `RODEProblem`, etc.).
+- `M`: infinitesimal Lagrangian descriptor (e.g. `M=M(du, u, t, p)` for an ODEProblem).
+- `uu0`: collection of initial conditions.
+- `direction`: the direction of the flow, with default `:both`, but also accepting `:forward` and `:backward`.
+
+### Fields
+
+With the given arguments, the constructor for `LagrangianDescriptorProblem` returns a type with the following arguments:
+
+- `ensprob::T1`: a suitable ensemble problem to be solved with the given collection of initial conditions `uu0` for each solve, with a suitable `prob_func` to iterate through the collection and a suitable `output_func` to only collect the Lagrangian descriptors at the end of the time interval.
+- `uu0::T2`: the given collection of initial conditions.
+- `direction::T3`: the given or the default direction of the flow.
+
+## Example Problems
+
 """
 struct LagrangianDescriptorProblem{T1, T2, T3}
     ensprob::T1

@@ -25,7 +25,7 @@ end
 
 Depending on the given `direction`, return an array with the sum of the given solution of a Lagrangian descriptor problem, or the forward or the backward or the difference of them, where each element of the array correponds to a given initial condition in the collection of initial conditions.
 """
-function (lagsol::LagrangianDescriptorSolution)(direction::Symbol=:total)
+function (lagsol::LagrangianDescriptorSolution)(direction::Symbol = :total)
     if direction == :total || direction == :both
         return getindex.(lagsol.enssol.u, :lfwd) + getindex.(lagsol.enssol.u, :lbwd)
     elseif direction == :forward
@@ -35,11 +35,7 @@ function (lagsol::LagrangianDescriptorSolution)(direction::Symbol=:total)
     elseif direction == :difference
         return getindex.(lagsol.enssol.u, :lfwd) - getindex.(lagsol.enssol.u, :lbwd)
     else
-        throw(
-            ArgumentError(
-                "The given argument should be a valid direction:\n" +
-                "`:forward`, `:backward`, `:both` or `:total`, or `:difference`"
-            )
-        )
+        throw(ArgumentError("The given argument should be a valid direction:\n" +
+                            "`:forward`, `:backward`, `:both` or `:total`, or `:difference`"))
     end
 end

@@ -47,7 +47,7 @@ plot!(augsol, idxs=(0,4)) =#
 
 #
 
-uu0 = range(-1.0, 1.0, length=101)
+uu0 = range(-1.0, 1.0, length = 101)
 lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 # solve(lagprob.ensprob, Tsit5(), trajectories=length(uu0))
 lagsol = solve(lagprob, Tsit5())
@@ -61,7 +61,8 @@ plot(lagsol, :backward)
 #plot!(uu0, sum.(lagsol.enssol.u), label="Lagrangian descriptor")
 #plot!(uu0, getindex.(lagsol.enssol.u, :lfwd) - getindex.(lagsol.enssol.u, :lbwd), label="Difference lfwd - lbwd")
 
-plot(uu0, lagsol(:forward), label="forward", title="Lagrangian descriptors", titlefont=10)
-plot!(uu0, lagsol(:backward), label="backward")
-plot!(uu0, lagsol(), label="total")
-plot!(uu0, lagsol(:difference), label="difference")
+plot(uu0, lagsol(:forward), label = "forward", title = "Lagrangian descriptors",
+     titlefont = 10)
+plot!(uu0, lagsol(:backward), label = "backward")
+plot!(uu0, lagsol(), label = "total")
+plot!(uu0, lagsol(:difference), label = "difference")

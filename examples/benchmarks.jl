@@ -9,8 +9,12 @@ using .LagrangianDescriptors
 using .LagrangianDescriptors: augmentprob
 
 @testset "Augmented vs post-processing scalar ODE" begin
-    f = function (u) u - u^3 end
-    f! = function (du, u, p, t) du .= f.(u) end
+    f = function (u)
+        u - u^3
+    end
+    f! = function (du, u, p, t)
+        du .= f.(u)
+    end
     t0 = 0.0
     tf = 5.0
     tspan = (t0, tf)
@@ -30,7 +34,9 @@ using .LagrangianDescriptors: augmentprob
     @info "Solve backward ODE problem:"
     @btime solve($probbwd, $(Tsit5()))
 
-    M = function (du, u, p, t) norm(du) end
+    M = function (du, u, p, t)
+        norm(du)
+    end
     augprob = @test_nowarn augmentprob(prob, M)
     @info "Create augmented ODE problem:"
     @btime augmentprob($prob, $M)
@@ -38,11 +44,14 @@ using .LagrangianDescriptors: augmentprob
     @info "Solve Augmented ODE problem:"
     @btime solve($augprob, $(Tsit5()))
 
-    postproc = function (sol, f, M, tspan) first(quadgk(t -> M(f.(sol(t)), nothing, nothing, nothing), first(tspan), last(tspan))) end
-    @test augsol.u[end].lfwd ≈ postproc(solfwd, f, M, tspan) rtol = 0.01
+    postproc = function (sol, f, M, tspan)
+        first(quadgk(t -> M(f.(sol(t)), nothing, nothing, nothing), first(tspan),
+                     last(tspan)))
+    end
+    @test augsol.u[end].lfwd≈postproc(solfwd, f, M, tspan) rtol=0.01
     @info "Postprocessing for forward Lagrangian descriptor:"
     @btime $postproc($solfwd, $f, $M, $tspan)
-    @test augsol.u[end].lbwd ≈ postproc(solbwd, f, M, tspan) atol = 0.01
+    @test augsol.u[end].lbwd≈postproc(solbwd, f, M, tspan) atol=0.01
     @info "Postprocessing for backward Lagrangian descriptor:"
     @btime $postproc($solbwd, $f, $M, $tspan)
 end

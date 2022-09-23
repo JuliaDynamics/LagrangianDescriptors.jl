@@ -1,3 +1,10 @@
+"""
+LagrangianDescriptorProblem{T1, T2, T3}
+    ensprob::T1
+    uu0::T2
+    direction::T3
+end
+"""
 struct LagrangianDescriptorProblem{T1, T2, T3}
     ensprob::T1
     uu0::T2

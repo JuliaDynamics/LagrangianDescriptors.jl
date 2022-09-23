@@ -202,45 +202,44 @@ end
 end =#
 
 @testset "LagrangianDescriptorProblems" begin @testset "linear OOP ODEProblem" begin
-        f = function (u, p, t)
-            u
-        end
-        p = 0.1
-        t0 = 0.0
-        tf = 5.0
-        tspan = (t0, tf)
-        u0 = 0.5
-        prob = ODEProblem(f, u0, tspan)
-
-        M = function (du, u, p, t)
-            sum(abs2, du)
-        end
-        uu0 = range(-1.0, 1.0, length = 101)
-        lagprob = @test_nowarn LagrangianDescriptorProblem(prob, M, uu0)
-        lagsol = @test_nowarn solve(lagprob, Tsit5())
-        @test_nowarn solve(lagprob, Tsit5(), EnsembleSerial())
-
-        @test lagsol() == lagsol(:total) == lagsol(:both) ≈ sum.(lagsol.enssol.u)
-        @test lagsol(:forward) ≈ getindex.(lagsol.enssol.u, :lfwd)
-        @test lagsol(:backward) ≈ getindex.(lagsol.enssol.u, :lbwd)
-        @test lagsol(:difference) ≈ lagsol(:forward) - lagsol(:backward)
-
-        @test_throws ArgumentError lagsol(:blah)
-
-        lagprob = @test_nowarn LagrangianDescriptorProblem(prob, M, uu0; direction=:forward)
-        lagsol = @test_nowarn solve(lagprob, Tsit5())
-        @test_nowarn solve(lagprob, Tsit5(), EnsembleSerial())
-
-        @test lagsol() ≈ sum.(lagsol.enssol.u) ≈  lagsol(:forward)
-        @test lagsol(:forward) ≈ getindex.(lagsol.enssol.u, :lfwd)
-
-        lagprob = @test_nowarn LagrangianDescriptorProblem(prob, M, uu0; direction=:backward)
-        lagsol = @test_nowarn solve(lagprob, Tsit5())
-        @test_nowarn solve(lagprob, Tsit5(), EnsembleSerial())
-
-        @test lagsol() ≈ sum.(lagsol.enssol.u) ≈ lagsol(:backward)
-        @test lagsol(:backward) ≈ getindex.(lagsol.enssol.u, :lbwd)
-
-        @test_throws ArgumentError LagrangianDescriptorProblem(prob, M, uu0; direction=:blah)
+    f = function (u, p, t)
+        u
     end
-end
+    p = 0.1
+    t0 = 0.0
+    tf = 5.0
+    tspan = (t0, tf)
+    u0 = 0.5
+    prob = ODEProblem(f, u0, tspan)
+
+    M = function (du, u, p, t)
+        sum(abs2, du)
+    end
+    uu0 = range(-1.0, 1.0, length = 101)
+    lagprob = @test_nowarn LagrangianDescriptorProblem(prob, M, uu0)
+    lagsol = @test_nowarn solve(lagprob, Tsit5())
+    @test_nowarn solve(lagprob, Tsit5(), EnsembleSerial())
+
+    @test lagsol() == lagsol(:total) == lagsol(:both) ≈ sum.(lagsol.enssol.u)
+    @test lagsol(:forward) ≈ getindex.(lagsol.enssol.u, :lfwd)
+    @test lagsol(:backward) ≈ getindex.(lagsol.enssol.u, :lbwd)
+    @test lagsol(:difference) ≈ lagsol(:forward) - lagsol(:backward)
+
+    @test_throws ArgumentError lagsol(:blah)
+
+    lagprob = @test_nowarn LagrangianDescriptorProblem(prob, M, uu0; direction = :forward)
+    lagsol = @test_nowarn solve(lagprob, Tsit5())
+    @test_nowarn solve(lagprob, Tsit5(), EnsembleSerial())
+
+    @test lagsol() ≈ sum.(lagsol.enssol.u) ≈ lagsol(:forward)
+    @test lagsol(:forward) ≈ getindex.(lagsol.enssol.u, :lfwd)
+
+    lagprob = @test_nowarn LagrangianDescriptorProblem(prob, M, uu0; direction = :backward)
+    lagsol = @test_nowarn solve(lagprob, Tsit5())
+    @test_nowarn solve(lagprob, Tsit5(), EnsembleSerial())
+
+    @test lagsol() ≈ sum.(lagsol.enssol.u) ≈ lagsol(:backward)
+    @test lagsol(:backward) ≈ getindex.(lagsol.enssol.u, :lbwd)
+
+    @test_throws ArgumentError LagrangianDescriptorProblem(prob, M, uu0; direction = :blah)
+end end

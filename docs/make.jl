@@ -14,9 +14,11 @@ makedocs(sitename = "LagrangianDescriptors",
                                   edit_link = "main"),
          modules = [LagrangianDescriptors])
 
-deploydocs(repo = "github.com/JuliaDynamics/LagrangianDescriptors.jl.git",
-           devbranch = "main",
-           forcepush = true)
+if get(ENV, "CI", nothing) == "true" || get(ENV, "GITHUB_TOKEN", nothing) !== nothing
+    deploydocs(repo = "github.com/JuliaDynamics/LagrangianDescriptors.jl.git",
+               devbranch = "main",
+               forcepush = true)
+end
 
 # Documenter can also automatically deploy documentation to gh-pages.
 # See "Hosting Documentation" and deploydocs() in the Documenter manual

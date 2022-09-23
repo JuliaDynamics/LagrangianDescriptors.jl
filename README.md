@@ -1,9 +1,9 @@
 # Lagrangian Descriptors
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-green.svg
-[docs-dev-url]: https://github.com/JuliaDynamics/LagrangianDescriptors.jl/
+[docs-dev-url]: https://github.com/JuliaDynamics/LagrangianDescriptors/
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://https://juliadynamics.github.io/LagrangianDescriptors.jl/stable/)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://https://juliadynamics.github.io/LagrangianDescriptors/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://juliadynamics.github.io/LagrangianDescriptors/dev/)
 ![Main Tests Workflow Status](https://github.com/JuliaDynamics/LagrangianDescriptors.jl/workflows/CI/badge.svg) [![codecov](https://codecov.io/gh/JuliaDynamics/LagrangianDescriptors.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/JuliaDynamics/LagrangianDescriptors.jl) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) ![GitHub repo size](https://img.shields.io/github/repo-size/JuliaDynamics/LagrangianDescriptors.jl)
 

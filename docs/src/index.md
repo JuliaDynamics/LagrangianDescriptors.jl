@@ -8,15 +8,15 @@ The method is akin to droping colored ink in a fluid flow, tracking the dye as i
 
 It is similar to drawing a phase portrait, which displays a collection of orbits, but in this method each orbit is painted according to its dynamic behavior, better revealing the overall picture.
 
-The image below, for instance, shows the dynamics of a periodically-forced Duffing equation, with a particular combination of parameters and near time $t=0$:
+The image below, for instance, shows the dynamics of a periodically-forced Duffing equation, with a particular combination of parameters and near time $t=0$ (see [Tutorial: Periodically-forced Duffing equation](tutorial_ODEs.md#Periodically-forced-Duffing-equation)):
 
 ![Duffing](img/duffing.png)
 
-## How it works?
+## How it works
 
 The package works by 
 1. taking a differential equation problem of a type defined by [SciML/DifferentialEquations.jl](https://github.com/SciML/DifferentialEquations.jl), with a given time span ``(t_0, t_f)``;
-1. taking an *infinitesimal descriptor* ``M=M(du, u, p, t)`` that will be integrated along a solution ``u(t) = u(t; u_0)``, to yield the forward Lagrangian descriptor ``L_{\mathrm{fwd}}(u_0) = \int_{t_0}^{t_f} M(du(t), u(t), p, t)\;\mathrm{d}t`` and, similarly, the backward Lagrangian descriptor, for a given initial condition ``u_0``;
+1. taking an *infinitesimal descriptor* ``M=M(du, u, p, t)`` that will be integrated along a solution ``u(t) = u(t; u_0)``, to yield the forward Lagrangian descriptor ``L_{\mathrm{fwd}}(u_0) = \int_{t_0}^{t_f} M(du(t), u(t), p, t)\;\mathrm{d}t`` and, similarly, the backward Lagrangian descriptor ``L_{\mathrm{bwd}}(u_0) = \int_{t_0}^{t_f} M(du(-t), u(-t), p, 2t_0 - t)\;\mathrm{d}t``, for a given initial condition ``u_0``;
 1. generating an *augmented* problem of the same time and with four components, for solving the original equation forward and backward in time, and for solving the Lagrangian descriptors forward and backward in time, as well;
 1. creating a `LagrangianDescriptorProblem` wrapping an [EnsembleProblem](https://diffeq.sciml.ai/dev/features/ensemble/) for the augmented system and with a given collection ``uu_0`` of initial conditions.
 1. solving the wrapped ensemble problem and returning a `LagrangianDescriptorSolution` containing the associated collection of (forward and backward) Lagrangian descriptors values at the final time of the simulations (which is ``t_f`` for the forward components and ``2t_0 - t_f`` for the backward ones).
@@ -30,6 +30,8 @@ The plot recipe works for some types of collections of initial conditions (e.g. 
 
 ## Developers
 
-LagrangianDescriptors is currently being developed by [Ricardo M. S. Rosa](https://rmsrosa.github.io), but contributors are welcome.
+[JuliaDynamics/LagrangianDescriptors.jl](https://github.com/JuliaDynamics/LagrangianDescriptors.jl) is currently being developed by [Ricardo M. S. Rosa](https://rmsrosa.github.io), but contributors are welcome.
 
 ## Cite
+
+Just cite the github repo [JuliaDynamics/LagrangianDescriptors.jl](https://github.com/JuliaDynamics/LagrangianDescriptors.jl) for now, while the package is not yet registered.

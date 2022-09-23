@@ -5,9 +5,9 @@ makedocs(
     sitename = "LagrangianDescriptors.jl",
     pages = [
         "Home" => "index.md"
-        "Overview" => "overview.md"
-        "Problems" => "problems.md"
-        "Solutions" => "solutions.md"
+        "Tutorials" => [
+            "ODEs" => "tutorial_ODEs.md"
+        ]
         "API" => "api.md"
     ],
     authors = "Ricardo Rosa",

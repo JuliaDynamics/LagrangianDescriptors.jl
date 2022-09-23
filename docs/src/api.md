@@ -1,4 +1,20 @@
 # API
+## Problems
 
-```@index
+```@docs
+LagrangianDescriptors.augmentprob
+```
+
+```@docs
+LagrangianDescriptors.LagrangianDescriptorProblem
+```
+
+## Solutions
+
+```@docs
+LagrangianDescriptors.LagrangianDescriptorSolution
+```
+
+```@docs
+LagrangianDescriptors.solve
 ```

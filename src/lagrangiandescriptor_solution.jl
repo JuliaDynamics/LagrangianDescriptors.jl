@@ -5,14 +5,14 @@ struct LagrangianDescriptorSolution{T1, T2, T3}
     direction::T3
 end
 
-Representation of the solution to a `LagrangianDescriptorProblem`.
+Representation of the solution to a [`LagrangianDescriptorProblem`](@ref).
 
 ## Fields
 
-- `enssol`: the `EnsembleSolution` of the associated ensemble problem in `LagrangianDescriptorProblem`.
+- `enssol`: the `EnsembleSolution` of the associated ensemble problem in [`LagrangianDescriptorProblem`](@ref).
 - `uu0`: the collection of initial conditions given in 
-the `LagrangianDescriptorProblem`.
-- `direction:` the direction given in the `LagrangianDescriptorProblem`.
+the [`LagrangianDescriptorProblem`](@ref).
+- `direction:` the direction given in the [`LagrangianDescriptorProblem`](@ref).
 """
 struct LagrangianDescriptorSolution{T1, T2, T3}
     enssol::T1

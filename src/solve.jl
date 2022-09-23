@@ -1,5 +1,9 @@
 """
     solve(prob::LagrangianDescriptorProblem, alg, args...; kwargs...)
+
+Solve a [`LagrangianDescriptorProblem`](@ref), which amounts to solving the associated `EnsembleProblem` in `prob.ensprob` and returning a [`LagrangianDescriptorSolution`](@ref).
+
+You should provide the necessary `args` and the desired `kwargs` for solving the associated ensemble problem for the underlying Differential Equation problem.
 """
 function solve(prob::LagrangianDescriptorProblem, alg, args...; kwargs...)
     # This first solve was a hack on 1.7.2 rosetta; otherwise the subsequente solve would hang

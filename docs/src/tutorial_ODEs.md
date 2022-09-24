@@ -98,3 +98,110 @@ savefig("img/duffing3.png")
 ```
 
 ![Duffing](img/duffing3.png)
+
+## Autonomous Duffing equation
+
+For visualizing the autonomous case, we may rewrite the system or, since we already have the non-autonomous case implemented, we just set the amplitude of the forcing term to zero:
+
+```julia
+A = 0.0; ω = 2π; p = (A, ω);
+prob = remake(prob, p=p)
+uu0 = [[x, y] for y in range(-1.0, 1.0, length=301), x in range(-1.8, 1.8, length=301)]
+lagprob = LagrangianDescriptorProblem(prob, M, uu0)
+
+lagsol = solve(lagprob, Tsit5());
+
+plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation \$\\ddot x = x - x^3 + A\\sin(\\omega t)\$\nwith A=$A and ω=$ω", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
+
+savefig("img/duffing4.png")
+```
+
+![Duffing](img/duffing4.png)
+
+## A scalar cubic equation
+
+Although one-dimensional problems are easier to understand, the method also works for such problems. Here we experiment with the scalar cubic equation
+
+```math
+   \frac{\mathrm{d}x}{\mathrm{d}t} = x - x^3
+```
+
+and a non-autonomous version
+
+```math
+   \frac{\mathrm{d}x}{\mathrm{d}t} = cos(\omega t)^2x - x^3.
+```
+
+The autonomous version has two stationary solutions, associated to the fixed points $x=0$ and $x=1$. The non-autonomous version still has the fixed point $x=0$.
+
+For simulating the autonomous case with the non-autonomous formulation, we just set ``\omega = 0``.
+
+We setup the `ODEProblem`:
+
+```julia
+f(u, p, t) = cos(p * t)^3 * u - u^3
+
+u0 = 0.5
+tspan = (0.0, 5.0)
+p = 0.0
+prob = ODEProblem(f, u0, tspan, p)
+```
+
+Build the `LagrangianDescriptorProblem`:
+
+```julia
+M(du, u, p, t) = norm(du)
+uu0 = range(-1.0, 1.0, length = 201)
+lagprob = LagrangianDescriptorProblem(prob, M, uu0)
+```
+
+Solve it:
+
+```julia
+lagsol = solve(lagprob, Tsit5())
+```
+
+and plot it:
+
+```julia
+plot(
+    uu0,
+    lagsol(:forward),
+    label = "forward",
+    title = "Lagrangian descriptors",
+    titlefont = 10,
+)
+plot!(uu0, lagsol(:backward), label = "backward")
+plot!(uu0, lagsol(), label = "total")
+plot!(uu0, lagsol(:difference), label = "difference")
+
+savefig("img/cubic.png")
+```
+
+In any of the Lagrangian descriptors (forward, backward, total, and difference) we distinguish the two fixed points.
+
+![Cubic](img/cubic.png)
+
+For the non-autonomous case, we just remake the problem with a non-zero ``\omega``:
+
+```julia
+p = 8π
+prob = remake(prob, p = p)
+lagprob = LagrangianDescriptorProblem(prob, M, uu0)
+lagsol = solve(lagprob, Tsit5())
+
+plot(
+    uu0,
+    lagsol(:forward),
+    label = "forward",
+    title = "Lagrangian descriptors",
+    titlefont = 10,
+)
+plot!(uu0, lagsol(:backward), label = "backward")
+plot!(uu0, lagsol(), label = "total")
+plot!(uu0, lagsol(:difference), label = "difference")
+
+savefig("img/cubic2.png")
+```
+
+![Cubic nonautonous](img/cubic2.png)

@@ -6,6 +6,7 @@ makedocs(sitename = "LagrangianDescriptors.jl",
                   "Tutorials" => [
                       "ODEs" => "tutorial_ODEs.md",
                   ]
+                  "Current State" => "current_state.md"
                   "API" => "api.md"],
          authors = "Ricardo Rosa",
          format = Documenter.HTML(;

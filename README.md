@@ -76,23 +76,12 @@ plot(lagsol, title="Lagrangian descriptors - Duffing with A=$A, ω=2π", titlefo
 
 ![Duffing Lagrangian descriptor](examples/img/duffing2.png)
 
-## Current state
-
-Handling of problems of the type `ODEProblem` is essentially done, including plot recipes for 1D and 2D problems.
-
-What we have so far:
-
-1. A method `augmentprob(prob::ODEProblem, M; view=:both)` which takes an `ODEProblem` and a local Lagrangian descriptor `M=M(du, u, p, t)` and creates another `ODEProblem` for an augmented system which contains for components: the original forward ODE problem, the associated backward ODE problem, and the equations for the forward and backward Lagrangian descriptors. If `view=:forward`, then the augmented system only contains the forward equation and the forward Lagrangian descriptor. If `view=:backard`, then the augmented system only contains the backward equation and the backward Lagrangian descriptor. The given `ODEProblem` can be in-place or out-of-place, but the augmented system is always in-place, and the components are build using `ComponentArrays`, with componentes `fwd` (forward ODE), `bwd` (backward ODE), `lfwd` (forward Lagrangian descriptor), `lbwd` (backward Lagrangian descriptor).
-1. A type and a method constructor `LagrangianDescriptorProblem(prob, M, uu0; direction::Symbol=:both)` that takes the original problem `prob`, the local Lagrangian descriptor `M`, a collection of initial conditions `uu0` (e.g. a vector, array, range or anything with a `length` and accessible by index `uu0[i]`), and the optional keyword `direction`. The arguments `prob`, `M` and `direction` are simply passed to `augmentprob(prob, M; view)` for the creation of an augmented problem `augprob`. Then, an `EnsembleProblem` is created with `augprob` and including a `prob_func` that is supposed to sweep the initial conditions in `uu0` and an `output_func` that is supposed to only save the last element (at time `final(tspan)`) of the foward and backward Lagrangian descriptors. They are then used to create an instance `lagprob` of the `LagrangianDescriptorProblem` that contains two fields, `lagprob.ensprob` being the associated ensemble problem and `lagprob.uu0` being the collection of initial conditions.
-1. Finally, a dispatch of `solve(lagprob::LagrangianDescriptorProblem, alg, args...; kwargs...)` that solves the ensemble problem `lagprob.ensprob` with `trajectories=length(uu0)` and whatever algoritm and arguments/keyword arguments is necessary or desired.
-
 ## Roadmap
 
 What is currently missing:
-1. A more flexible plot recipe;
-1. More tests;
-1. Proper documentation;
 1. Support for other types of problems, e.g. `SDEProblem`, `RODEProblem`, mixed differential-algebraic equations, etc.;
+1. A more flexible plot recipe;
+1. Improve the documentation with more examples;
 1. Maybe an adaptive method to refine the set `uu0` of initial conditions!;
 1. I don't know whether/how the idea applies to delay type equations, but we should check that out.
 1. Register the package.

@@ -45,13 +45,12 @@ using .LagrangianDescriptors: augmentprob
     @btime solve($augprob, $(Tsit5()))
 
     postproc = function (sol, f, M, tspan)
-        first(quadgk(t -> M(f.(sol(t)), nothing, nothing, nothing), first(tspan),
-                     last(tspan)))
+        first(quadgk(t -> M(f.(sol(t)), nothing, nothing, nothing), first(tspan), last(tspan)))
     end
-    @test augsol.u[end].lfwd≈postproc(solfwd, f, M, tspan) rtol=0.01
+    @test augsol.u[end].lfwd ≈ postproc(solfwd, f, M, tspan) rtol = 0.01
     @info "Postprocessing for forward Lagrangian descriptor:"
     @btime $postproc($solfwd, $f, $M, $tspan)
-    @test augsol.u[end].lbwd≈postproc(solbwd, f, M, tspan) atol=0.01
+    @test augsol.u[end].lbwd ≈ postproc(solbwd, f, M, tspan) atol = 0.01
     @info "Postprocessing for backward Lagrangian descriptor:"
     @btime $postproc($solbwd, $f, $M, $tspan)
 end

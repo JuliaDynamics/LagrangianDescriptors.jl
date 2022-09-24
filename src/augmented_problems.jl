@@ -35,8 +35,12 @@ function augmentprob(prob::ODEProblem, M; direction::Symbol = :both)
             end
         end
 
-        uaug0 = ComponentVector(fwd = prob.u0, bwd = prob.u0, lfwd = zero(eltype(prob.u0)),
-                                lbwd = zero(eltype(prob.u0)))
+        uaug0 = ComponentVector(
+            fwd = prob.u0,
+            bwd = prob.u0,
+            lfwd = zero(eltype(prob.u0)),
+            lbwd = zero(eltype(prob.u0)),
+        )
     elseif direction == :forward
         if isinplace(prob.f)
             faug = function (du, u, p, t)
@@ -75,7 +79,11 @@ function augmentprob(prob::ODEProblem, M; direction::Symbol = :both)
 
         uaug0 = ComponentVector(bwd = prob.u0, lbwd = zero(eltype(prob.u0)))
     else
-        throw(ArgumentError("Keyword argument `direction = $direction` not implemented; use either `:forward`, `:backward` or `:both`"))
+        throw(
+            ArgumentError(
+                "Keyword argument `direction = $direction` not implemented; use either `:forward`, `:backward` or `:both`",
+            ),
+        )
     end
     augprob = ODEProblem(faug, uaug0, prob.tspan, prob.p; prob.kwargs...)
     return augprob

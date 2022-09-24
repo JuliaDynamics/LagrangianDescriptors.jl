@@ -1,7 +1,10 @@
 @recipe function f(lagsol::LagrangianDescriptorSolution, direction = lagsol.direction)
-    direction in (:forward, :backward, :both, :total, :difference) ||
-        throw(ArgumentError("The given argument should be a valid direction:\n" +
-                            "`:forward`, `:backward`, `:both` or `:total`, or `:difference`"))
+    direction in (:forward, :backward, :both, :total, :difference) || throw(
+        ArgumentError(
+            "The given argument should be a valid direction:\n" +
+            "`:forward`, `:backward`, `:both` or `:total`, or `:difference`",
+        ),
+    )
     if lagsol.uu0 isa AbstractVector{<:Number}
         seriestype --> :path
         return lagsol.uu0, lagsol(direction)

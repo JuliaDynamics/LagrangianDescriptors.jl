@@ -61,8 +61,13 @@ plot(lagsol, :backward)
 #plot!(uu0, sum.(lagsol.enssol.u), label="Lagrangian descriptor")
 #plot!(uu0, getindex.(lagsol.enssol.u, :lfwd) - getindex.(lagsol.enssol.u, :lbwd), label="Difference lfwd - lbwd")
 
-plot(uu0, lagsol(:forward), label = "forward", title = "Lagrangian descriptors",
-     titlefont = 10)
+plot(
+    uu0,
+    lagsol(:forward),
+    label = "forward",
+    title = "Lagrangian descriptors",
+    titlefont = 10,
+)
 plot!(uu0, lagsol(:backward), label = "backward")
 plot!(uu0, lagsol(), label = "total")
 plot!(uu0, lagsol(:difference), label = "difference")

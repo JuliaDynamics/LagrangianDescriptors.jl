@@ -57,7 +57,7 @@ lagsol = solve(lagprob, Tsit5())
 plot(lagsol)
 ```
 """
-struct LagrangianDescriptorProblem{T1, T2, T3}
+struct LagrangianDescriptorProblem{T1,T2,T3}
     ensprob::T1
     uu0::T2
     direction::T3
@@ -66,9 +66,15 @@ struct LagrangianDescriptorProblem{T1, T2, T3}
         augprob = augmentprob(prob, M; direction)
         if direction == :both
             prob_func = function (augprob, i, repeat; uu0 = uu0)
-                remake(augprob,
-                       u0 = ComponentVector(fwd = uu0[i], bwd = uu0[i], lfwd = 0.0,
-                                            lbwd = 0.0))
+                remake(
+                    augprob,
+                    u0 = ComponentVector(
+                        fwd = uu0[i],
+                        bwd = uu0[i],
+                        lfwd = 0.0,
+                        lbwd = 0.0,
+                    ),
+                )
             end
             output_func = function (sol, i)
                 (ComponentArray(lfwd = last(sol).lfwd, lbwd = last(sol).lbwd), false)
@@ -88,10 +94,14 @@ struct LagrangianDescriptorProblem{T1, T2, T3}
                 (ComponentArray(lbwd = last(sol).lbwd), false)
             end
         else
-            throw(ArgumentError("Keyword argument `direction = $direction` not implemented; use either `:forward`, `:backward` or `:both`"))
+            throw(
+                ArgumentError(
+                    "Keyword argument `direction = $direction` not implemented; use either `:forward`, `:backward` or `:both`",
+                ),
+            )
         end
 
         ensprob = EnsembleProblem(augprob, prob_func = prob_func, output_func = output_func)
-        new{typeof(ensprob), typeof(uu0), typeof(direction)}(ensprob, uu0, direction)
+        new{typeof(ensprob),typeof(uu0),typeof(direction)}(ensprob, uu0, direction)
     end
 end

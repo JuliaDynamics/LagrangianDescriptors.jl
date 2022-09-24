@@ -14,7 +14,7 @@ Representation of the solution to a [`LagrangianDescriptorProblem`](@ref).
 the [`LagrangianDescriptorProblem`](@ref).
 - `direction:` the direction given in the [`LagrangianDescriptorProblem`](@ref).
 """
-struct LagrangianDescriptorSolution{T1, T2, T3}
+struct LagrangianDescriptorSolution{T1,T2,T3}
     enssol::T1
     uu0::T2
     direction::T3
@@ -35,7 +35,11 @@ function (lagsol::LagrangianDescriptorSolution)(direction::Symbol = lagsol.direc
     elseif direction == :difference
         return getindex.(lagsol.enssol.u, :lfwd) - getindex.(lagsol.enssol.u, :lbwd)
     else
-        throw(ArgumentError("The given argument should be a valid direction:\n" *
-                            "`:forward`, `:backward`, `:both` or `:total`, or `:difference`"))
+        throw(
+            ArgumentError(
+                "The given argument should be a valid direction:\n" *
+                "`:forward`, `:backward`, `:both` or `:total`, or `:difference`",
+            ),
+        )
     end
 end

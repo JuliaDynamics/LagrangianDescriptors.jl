@@ -12,12 +12,20 @@ The image below, for instance, shows the dynamics of a periodically-forced Duffi
 
 ![Duffing](img/duffing.png)
 
-## How it works
+## How it is implemented
 
-The package works by 
-1. taking a differential equation problem of a type defined by [SciML/DifferentialEquations.jl](https://github.com/SciML/DifferentialEquations.jl), with a given time span ``(t_0, t_f)``;
-1. taking an *infinitesimal descriptor* ``M=M(du, u, p, t)`` that will be integrated along a solution ``u(t) = u(t; u_0)``, to yield the forward Lagrangian descriptor ``L_{\mathrm{fwd}}(u_0) = \int_{t_0}^{t_f} M(du(t), u(t), p, t)\;\mathrm{d}t`` and, similarly, the backward Lagrangian descriptor ``L_{\mathrm{bwd}}(u_0) = \int_{t_0}^{t_f} M(du(-t), u(-t), p, 2t_0 - t)\;\mathrm{d}t``, for a given initial condition ``u_0``;
-1. generating an *augmented* problem of the same time and with four components, for solving the original equation forward and backward in time, and for solving the Lagrangian descriptors forward and backward in time, as well;
+The implementation works by 
+1. taking a *differential equation problem* of a type defined by [SciML/DifferentialEquations.jl](https://github.com/SciML/DifferentialEquations.jl), with a given time span ``(t_0, t_f)``;
+1. taking an *infinitesimal descriptor* ``M=M(du, u, p, t)`` (or other form suitable for the problem type) that will be integrated along a solution ``u(t) = u(t; u_0)``, to yield the forward Lagrangian descriptor ``L_{\mathrm{fwd}}(u_0) = \int_{t_0}^{t_f} M(du(t), u(t), p, t)\;\mathrm{d}t`` and, similarly, the backward Lagrangian descriptor ``L_{\mathrm{bwd}}(u_0) = \int_{t_0}^{t_f} M(du(-t), u(-t), p, 2t_0 - t)\;\mathrm{d}t``, for a given initial condition ``u_0``;
+1. generating an *augmented* problem of the same time and with four components, for solving the original equation forward and backward in time, and for solving the Lagrangian descriptors forward and backward in time, as well, which in the case of an out of place ODE, and omitting some arguments, is of the form
+```math
+\begin{cases}
+  \frac{\mathrm{d}u}{\mathrm{d}t} = f(u, t), \\ \\
+  \frac{\mathrm{d}v}{\mathrm{d}t} = f(u, 2t_0 - t), \\ \\
+  \frac{\mathrm{d}L_{\mathrm{fwd}}} = M(u, t), \\ \\
+  \frac{\mathrm{d}L_{\mathrm{bwd}}} = M(v, 2t_0 - t). 
+\end{cases}
+```
 1. creating a `LagrangianDescriptorProblem` wrapping an [EnsembleProblem](https://diffeq.sciml.ai/dev/features/ensemble/) for the augmented system and with a given collection ``uu_0`` of initial conditions.
 1. solving the wrapped ensemble problem and returning a `LagrangianDescriptorSolution` containing the associated collection of (forward and backward) Lagrangian descriptors values at the final time of the simulations (which is ``t_f`` for the forward components and ``2t_0 - t_f`` for the backward ones).
 1. Finally, one can visualize either the forward, or the backward, or the sum, or even the difference, of the forward and backward Lagrangian descriptor with a plot recipe for the `LagrangianDescriptorSolution`.

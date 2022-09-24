@@ -63,7 +63,6 @@ struct LagrangianDescriptorProblem{T1,T2,T3}
     direction::T3
 
     function LagrangianDescriptorProblem(prob, M, uu0; direction::Symbol = :both)
-        augprob = augmentprob(prob, M; direction)
         if direction == :both
             prob_func = function (augprob, i, repeat; uu0 = uu0)
                 remake(
@@ -101,6 +100,7 @@ struct LagrangianDescriptorProblem{T1,T2,T3}
             )
         end
 
+        augprob = augmentprob(prob, M; direction)
         ensprob = EnsembleProblem(augprob, prob_func = prob_func, output_func = output_func)
         new{typeof(ensprob),typeof(uu0),typeof(direction)}(ensprob, uu0, direction)
     end

@@ -20,10 +20,10 @@ The implementation works by
 1. generating an *augmented* problem of the same time and with four components, for solving the original equation forward and backward in time, and for solving the Lagrangian descriptors forward and backward in time, as well, which in the case of an out of place ODE, and omitting some arguments, is of the form
 ```math
 \begin{cases}
-  \frac{\mathrm{d}u}{\mathrm{d}t} = f(u, t), \\ \\
-  \frac{\mathrm{d}v}{\mathrm{d}t} = f(u, 2t_0 - t), \\ \\
-  \frac{\mathrm{d}L_{\mathrm{fwd}}} = M(u, t), \\ \\
-  \frac{\mathrm{d}L_{\mathrm{bwd}}} = M(v, 2t_0 - t). 
+  \displaystyle \frac{\mathrm{d}u}{\mathrm{d}t} = f(u, t), \\ \\
+  \displaystyle \frac{\mathrm{d}v}{\mathrm{d}t} = f(u, 2t_0 - t), \\ \\
+  \displaystyle \frac{\mathrm{d}L_{\mathrm{fwd}}}{\mathrm{d}t} = M(u, t), \\ \\
+  \displaystyle \frac{\mathrm{d}L_{\mathrm{bwd}}}{\mathrm{d}t} = M(v, 2t_0 - t). 
 \end{cases}
 ```
 1. creating a `LagrangianDescriptorProblem` wrapping an [EnsembleProblem](https://diffeq.sciml.ai/dev/features/ensemble/) for the augmented system and with a given collection ``uu_0`` of initial conditions.

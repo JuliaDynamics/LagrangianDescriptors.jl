@@ -4,7 +4,7 @@ using LagrangianDescriptors: augmentprob
 using LinearAlgebra: norm
 using BenchmarkTools: @btime
 
-@testset "Augmented ODEProblems" begin
+@testset "Augmented ODEs" begin
     @testset "Linear OOP" begin
         f = function (u, p, t)
             p * u
@@ -208,7 +208,7 @@ end
     @btime $postproc($solbwd, $f, $M, $tspan)
 end =#
 
-@testset "LagrangianDescriptorProblems" begin
+@testset "Lagrangian Descr." begin
     @testset "linear OOP ODEProblem" begin
         f = function (u, p, t)
             u
@@ -260,7 +260,7 @@ end =#
     end
 end
 
-@testset "Plot recipe" begin
+@testset "Plot recipes" begin
     @testset "Duffing" begin
         f! = function (du, u, p, t)
             x, y = u
@@ -291,7 +291,7 @@ end
         @test_throws ArgumentError plot(lagsol, :blah)
     end
 
-    @testset "" begin
+    @testset "Cubic" begin
         f = function (u, p, t)
             u - u^3
         end

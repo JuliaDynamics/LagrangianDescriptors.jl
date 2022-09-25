@@ -2,7 +2,7 @@
 
 ## About
 
-The dynamics of evolutionary systems can be quite intricate. The method of **Lagrangian Descriptors** helps to visualize the complicate behavior of such systems and to make sense of it. In a recent article, Wiggins and and García-Garrido call it [a method for] *painting the phase portrait* (of a dynamical system) (see [S. Wiggins and V. J. García-Garrido, Painting the Phase Portrait of a Dynamical System with the Computational Tool of Lagrangian Descriptors (AMS Notices, June/July 2022)](https://www.ams.org/journals/notices/202206/noti2489/noti2489.html?adat=June/July%202022&trk=2489&galt=none&cat=feature&pdfissue=202206&pdffile=rnoti-p936.pdf).
+The dynamics of evolutionary systems can be quite intricate. The method of **Lagrangian Descriptors** helps to visualize the complicate behavior of such systems and make sense of it. In a recent article, Wiggins and and García-Garrido call it [a method for] *painting the phase portrait* (of a dynamical system) (see [S. Wiggins and V. J. García-Garrido, Painting the Phase Portrait of a Dynamical System with the Computational Tool of Lagrangian Descriptors (AMS Notices, June/July 2022)](https://www.ams.org/journals/notices/202206/noti2489/noti2489.html?adat=June/July%202022&trk=2489&galt=none&cat=feature&pdfissue=202206&pdffile=rnoti-p936.pdf).
 
 The image below, for instance, shows the dynamics of a periodically-forced Duffing equation, with a particular combination of parameters and near time $t=0$ (see [Tutorial: Periodically-forced Duffing equation](tutorial_ODEs.md#Periodically-forced-Duffing-equation)):
 
@@ -54,11 +54,11 @@ with the set of initial conditions
 u(t_0) = v(t_0) = u_0, \quad L_{\mathrm{fwd}}(t_0) = L_{\mathrm{bwd}}(t_0) = 0.
 ```
 
-For a given time interval ``(t_0, t_f)``, with ``t_f > t_0``, notice that ``u=u(t)`` solves the system forward, over the interval ``(t_0, t_f)``, while ``v=v(t)`` solves the system backward, over the interval ``(2t_0 - t_f, t_0) = (t_0 - (t_f - t_0), t_0)``, both with the same initial condition ``u_0``, i.e. the compute the forward and backward parts of the same trajectory, over the same length of time, but in different directions.
+For a given time interval ``(t_0, t_f)``, with ``t_f > t_0``, notice that ``u=u(t)`` solves the system forward, over the interval ``(t_0, t_f)``, while ``v=v(t)`` is defined over ``(t_0, t_f)`` but corresponds to solving the system backward, starting at `t_0` and ending at ``2t_0 - t_f = t_0 - (t_f - t_0)``, both with the same initial condition ``u_0``, i.e. the augmented system computes the forward and backward parts of the same trajectory, over the same length of time, but in different directions.
 
 ## Implementation
 
-The API is simple, it amounts to building a `LagrangianDescriptorProblem`, solving it and plotting the solution:
+The API is simple, it amounts to i) building a `LagrangianDescriptorProblem`, ii) solving it with an overload of `solve`; and iii) plotting the solution with a `plot` recipe:
 
 ```julia
 lagprob = LagrangianDescriptorProblem(prob, M, uu0)
@@ -66,7 +66,7 @@ lagsol = solve(lagprob, alg)
 plot(lagsol)
 ```
 
-where `prob` is a given problem, such as an `ODEProblem`; `M` is the infinitesimal Lagrangian descriptor; `uu0` is a collection of initial conditions; and `alg` is the algorithm chosen to solve the `ODEProblem`, such as `Tsit5()`.
+where `prob` is a given problem, such as an `ODEProblem`; `M` is the infinitesimal Lagrangian descriptor; `uu0` is a collection of initial conditions; and `alg` is the algorithm chosen to solve `prob`, such as `Tsit5()`.
 
 More precisely, the implementation works as follows:
 

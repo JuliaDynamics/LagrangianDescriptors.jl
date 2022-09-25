@@ -4,7 +4,7 @@ using LagrangianDescriptors
 makedocs(
     sitename = "LagrangianDescriptors.jl",
     pages = [
-        "Home" => "index.md"
+        "Overview" => "index.md"
         "Tutorials" => [
             "ODEs" => "tutorial_ODEs.md",
             "Alternative via post-processing" => "postprocessing.md"

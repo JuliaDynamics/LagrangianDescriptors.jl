@@ -6,7 +6,6 @@ makedocs(
     pages = [
         "Home" => "index.md"
         "Tutorials" => ["ODEs" => "tutorial_ODEs.md"]
-        "Current State" => "current_state.md"
         "Implementation" => "implementation.md"
         "API" => "api.md"
     ],

@@ -8,7 +8,7 @@ The image below, for instance, shows the dynamics of a periodically-forced Duffi
 
 ![Duffing](img/duffing.png)
 
-## The method
+## Method
 
 The method is akin to droping colored ink in a fluid flow, tracking the dye as it is transported by the flow, and revealing the pattern created after a certain period of time. The difference being that the color doesn't get diffused as in a real fluid, so the image doesn't get blurred and one gets a clearer picture.
 
@@ -30,7 +30,7 @@ L_{\mathrm{bwd}} = \int_{t_f}^{t_0} M(t, u(t)) \;\mathrm{d}t = - \int_{t_0}^{t_f
 
 Since the system might be non-autonomous, these Lagragians descriptors are referred as descriptors **near ``t_0``**.
 
-## The computation
+## Approach
 
 Notice the computation of the Lagrangian descriptors only depend on a given solution and on the infinitesimal descriptor, so that they can be computed *a posteriori*. However, this is not the most efficient way of computing them. For a more efficient implementation, one writes the integrals for the Lagrangian descriptors as differential equations, i.e.
 
@@ -44,7 +44,7 @@ More explicitly, when both forward and backward Lagrangians are desired, we may 
 ```math
 \begin{cases}
   \displaystyle \frac{\mathrm{d}u}{\mathrm{d}t} = f(u, t), \\ \\
-  \displaystyle \frac{\mathrm{d}v}{\mathrm{d}t} = f(u, 2t_0 - t), \\ \\
+  \displaystyle \frac{\mathrm{d}v}{\mathrm{d}t} = -f(v, 2t_0 - t), \\ \\
   \displaystyle \frac{\mathrm{d}L_{\mathrm{fwd}}}{\mathrm{d}t} = M(u, t), \\ \\
   \displaystyle \frac{\mathrm{d}L_{\mathrm{bwd}}}{\mathrm{d}t} = M(v, 2t_0 - t),
 \end{cases}
@@ -58,20 +58,44 @@ For a given time interval ``(t_0, t_f)``, with ``t_f > t_0``, notice that ``u=u(
 
 ## Implementation
 
-The implementation works by 
-1. Taking a *differential equation problem* of a type defined by [SciML/DifferentialEquations.jl](https://github.com/SciML/DifferentialEquations.jl), with a given time span ``(t_0, t_f)``;
-1. Taking an *infinitesimal descriptor* ``M=M(du, u, p, t)`` (or other form suitable to the given problem type) that will be integrated along a solution ``u(t) = u(t; u_0)``, to yield the forward Lagrangian descriptor ``L_{\mathrm{fwd}}(u_0) = \int_{t_0}^{t_f} M(du(t), u(t), p, t)\;\mathrm{d}t`` and, similarly, the backward Lagrangian descriptor ``L_{\mathrm{bwd}}(u_0) = \int_{t_0}^{t_f} M(du(-t), u(-t), p, 2t_0 - t)\;\mathrm{d}t``, for a given initial condition ``u_0``;
-1. Generating an *augmented* problem of the same time and with four components, for solving the original equation forward and backward in time, and for solving the Lagrangian descriptors forward and backward in time. The way the augmented systems is constructed is via [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl), so the augmented system is a `ComponentVector`, with components `fwd`, `bwd`, `lfwd`, and `lbwd`, respectively.
-
-1. Creating a `LagrangianDescriptorProblem` by wrapping an [EnsembleProblem](https://diffeq.sciml.ai/dev/features/ensemble/) for the augmented system and with a given collection ``uu_0`` of initial conditions to be used at each trajectory of the ensemble;
-1. Solving the wrapped ensemble problem and returning a `LagrangianDescriptorSolution` containing the associated collection of (forward and backward) Lagrangian descriptor values at the final time of each simulation (which is ``t_f`` for the forward components and corresponds to ``2t_0 - t_f`` for the backward ones);
-1. Finally, one can visualize either the forward, or the backward, or the sum, or even the difference, of the forward and backward Lagrangian descriptor with a plot recipe for the `LagrangianDescriptorSolution`.
+The implementation works as follows:
+1. One builds a *differential equation problem* `prob` of a type defined in `SciMLBase.jl`, from [SciML/DifferentialEquations.jl](https://github.com/SciML/DifferentialEquations.jl), say an `ODEProblem` for ``\mathrm{d}u/\mathrm{d}t = f(u, p, t)`` (in-place or out-of-place). 
+1. One chooses an *infinitesimal descriptor* of the form `M=M(du, u, p, t)` (or other form suitable to the given problem type), with scalar values, that will be integrated along a solution ``u(t) = u(t; u_0)``, to yield the forward Lagrangian descriptor ``L_{\mathrm{fwd}}(u_0)`` and the backward Lagrangian descriptor ``L_{\mathrm{bwd}}(u_0)``, for a given initial condition ``u_0``.
+1. One chooses a collection `uu0` of initial conditions (e.g. a `Vector`, or a more general `Array` or any iterator, with the elements of the collection being suitable initial conditions for the given problem), representing a mesh in phase space or a portion of a sub-manifold of the phase space to be "painted" by the method.
+1. Then we pass them to `lagprob = LagrangianDescriptorProblem(prob, M, uu0)`, to create the associated *Lagrangian descriptor problem* `lagprob`.
+    1. `LagrangianDescriptorProblem` uses `prob.f`, `prob.p`, `prob.u0`, `prob.tspan`, and any `prob.kwargs` to create, via `ComponentArrays`, a new problem (e.g. a new `ODEProblem`) for the *augmented system*.
+    1. The *augmented* problem has, by default, four components, for solving the original equation forward and backward in time, and for solving the Lagrangian descriptors forward and backward in time. The way the augmented systems is constructed is via [ComponentArrays.jl](https://github.com/jonniedie/ComponentArrays.jl), so the augmented system is a `ComponentVector`, with components `fwd`, `bwd`, `lfwd`, and `lbwd`, respectively.
+    2. One may choose the keyword `direction = :forward` or `direction = :backward` to build the augmented system in only one direction, with the default being `direction = :both`.
+    1. `LagrangianDescriptorProblem` then wraps an [EnsembleProblem](https://diffeq.sciml.ai/dev/features/ensemble/) for the augmented system and with the given collection `uu_0` of initial conditions to be used at each trajectory of the ensemble;
+1. Solve the `LagrangianDescriptorProblem` by invoking `lagsol = solve(lagprob, alg, args..., kwargs...)`, with the appropriate algorithm and any other argument for the ensemble solve of the underlying ensemble problem `lagprob.ensprob`. 
+1. `solve` returns a `LagrangianDescriptorSolution` containing the associated collection of (forward and backward) Lagrangian descriptor values at the final time of each simulation (which is ``t_f`` for the forward components and corresponds to ``2t_0 - t_f`` for the backward ones). This solution has the following fields:
+    1. `enssol`: the `EnsembleSolution` of the associated ensemble problem, where `enssol.u` contains a vector with the component arays `lfwd` and `lbwd` (or only one of them, depending on the `direction`) for the Lagrangian descriptors at the final time of the simulation (i.e. ``t_f`` for the forward Lagrangian and ``2t_0 - t_f`` for the backward);
+    1. `uu0`: the given collection of initial conditions;
+    1. `direction`: the direction chosen, which defaults to `:both`, but can be also `:forward` or `:backward`.
+1. Finally, one can use `plot` to visualize either the forward, or the backward, or the sum (total), or even the difference, of the forward and backward Lagrangian descriptor, via a plot recipe for the `LagrangianDescriptorSolution`, i.e. by calling `plot(lagsol)` or `plot(lagsol, direction)`, where `direction` is either `:forward`, `:backward`, `:total` or `:difference`.
 
 ## Current state
 
 The package is still in an embrionary phase and currently accepts differential equations of the type `ODEProblem`. Problems like `SDEProblem` and `RODEProblem` will be implemented soon. Other problems will come eventually.
 
-The plot recipe works for some types of collections of initial conditions (e.g. a `AbstractVector{<:Number}` for scalar problems and `AbstractMatrix{<:AbstractVector{<:Number}}` for two-dimensional problems). More general and flexible plot recipes will also be implemented.
+The plot recipe works for some types of collections of initial conditions (e.g. a `AbstractVector{<:Number}`, for scalar problems, and `AbstractMatrix{<:AbstractVector{<:Number}}` with the `AbstractVector` of length two, for two-dimensional problems). More general and flexible plot recipes will also be implemented.
+
+## Roadmap
+
+What is currently missing:
+1. Support for other types of problems, e.g. `SDEProblem`, `RODEProblem`, mixed differential-algebraic equations, etc.;
+1. A more flexible plot recipe;
+1. Improve the documentation with more examples;
+1. Maybe an adaptive method to refine the set `uu0` of initial conditions!;
+1. I don't know whether/how the idea applies to delay type equations, but we should check that out.
+1. Register the package.
+
+## References
+
+* [Painting the Phase Portrait of a Dynamical System with the Computational Tool of Lagrangian Descriptors](https://www.ams.org/journals/notices/202206/noti2489/noti2489.html?adat=June/July%202022&trk=2489&galt=none&cat=feature&pdfissue=202206&pdffile=rnoti-p936.pdf)
+* [Lagrangian descriptors: A method for revealing phase space structures of general time dependent dynamical systems](https://www.sciencedirect.com/science/article/abs/pii/S1007570413002037)
+* [Lagrangian Descriptors - *Discovery and Quantification of Phase Space Structure and Transport*](https://champsproject.github.io/lagrangian_descriptors/docs/authors.html)
+* [Frequently Asked Questions about Lagrangian Descriptors](https://acp.copernicus.org/preprints/acp-2016-633/acp-2016-633-SC2-supplement.pdf)
 
 ## Developers
 

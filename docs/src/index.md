@@ -58,7 +58,18 @@ For a given time interval ``(t_0, t_f)``, with ``t_f > t_0``, notice that ``u=u(
 
 ## Implementation
 
-The implementation works as follows:
+The API is simple, it amounts to building a `LagrangianDescriptorProblem`, solving it and plotting the solution:
+
+```julia
+lagprob = LagrangianDescriptorProblem(prob, M, uu0)
+lagsol = solve(lagprob, alg)
+plot(lagsol)
+```
+
+where `prob` is a given problem, such as an `ODEProblem`; `M` is the infinitesimal Lagrangian descriptor; `uu0` is a collection of initial conditions; and `alg` is the algorithm chosen to solve the `ODEProblem`, such as `Tsit5()`.
+
+More precisely, the implementation works as follows:
+
 1. One builds a *differential equation problem* `prob` of a type defined in `SciMLBase.jl`, from [SciML/DifferentialEquations.jl](https://github.com/SciML/DifferentialEquations.jl), say an `ODEProblem` for ``\mathrm{d}u/\mathrm{d}t = f(u, p, t)`` (in-place or out-of-place). 
 1. One chooses an *infinitesimal descriptor* of the form `M=M(du, u, p, t)` (or other form suitable to the given problem type), with scalar values, that will be integrated along a solution ``u(t) = u(t; u_0)``, to yield the forward Lagrangian descriptor ``L_{\mathrm{fwd}}(u_0)`` and the backward Lagrangian descriptor ``L_{\mathrm{bwd}}(u_0)``, for a given initial condition ``u_0``.
 1. One chooses a collection `uu0` of initial conditions (e.g. a `Vector`, or a more general `Array` or any iterator, with the elements of the collection being suitable initial conditions for the given problem), representing a mesh in phase space or a portion of a sub-manifold of the phase space to be "painted" by the method.

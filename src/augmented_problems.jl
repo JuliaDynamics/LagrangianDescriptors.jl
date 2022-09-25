@@ -6,7 +6,7 @@
 
 Create an augmented `ODEProblem` by aggregating the forward and backward Lagrangian descriptors to the given `ODEProblem`.
 
-More precisely, with given `f = prob.f` and `u0 = prob.u0` and `tspan = prob.tspan`, an augmented `ODEProblem` is that solves the forward and backward ODE and the forward and backward Lagrangian descriptors simultaneously.
+More precisely, with given `f = prob.f`, `u0 = prob.u0`, and `tspan = prob.tspan`, an augmented `ODEProblem` is created that solves the forward and backward ODE and the forward and backward Lagrangian descriptors simultaneously.
 
 The (global) Lagrangian descriptors are based on the provided local descriptor `M=M(du, u, p, t)`. The (forward/backward) Lagrangian descriptor is the time-integration of the local descriptor along the (forward/backward) trajectory.
 

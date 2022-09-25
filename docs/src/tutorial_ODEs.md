@@ -126,24 +126,15 @@ Although one-dimensional problems are easier to understand, the method also work
    \frac{\mathrm{d}x}{\mathrm{d}t} = x - x^3
 ```
 
-and a non-autonomous version
-
-```math
-   \frac{\mathrm{d}x}{\mathrm{d}t} = cos(\omega t)^2x - x^3.
-```
-
-The autonomous version has two stationary solutions, associated to the fixed points $x=0$ and $x=1$. The non-autonomous version still has the fixed point $x=0$.
-
-For simulating the autonomous case with the non-autonomous formulation, we just set ``\omega = 0``.
+This equation has two stationary solutions, associated with the fixed points $x=0$ and $x=1$.
 
 We setup the `ODEProblem`:
 
 ```julia
-f(u, p, t) = cos(p * t)^3 * u - u^3
+f(u, p, t) = u - u^3
 
 u0 = 0.5
-tspan = (0.0, 5.0)
-p = 0.0
+tspan = (0.0, 1.0)
 prob = ODEProblem(f, u0, tspan, p)
 ```
 
@@ -168,7 +159,7 @@ plot(
     uu0,
     lagsol(:forward),
     label = "forward",
-    title = "Lagrangian descriptors",
+    title = "Lagrangian descriptors for a cubic equation",
     titlefont = 10,
 )
 plot!(uu0, lagsol(:backward), label = "backward")
@@ -181,27 +172,3 @@ savefig("img/cubic.png")
 In any of the Lagrangian descriptors (forward, backward, total, and difference) we distinguish the two fixed points.
 
 ![Cubic](img/cubic.png)
-
-For the non-autonomous case, we just remake the problem with a non-zero ``\omega``:
-
-```julia
-p = 8π
-prob = remake(prob, p = p)
-lagprob = LagrangianDescriptorProblem(prob, M, uu0)
-lagsol = solve(lagprob, Tsit5())
-
-plot(
-    uu0,
-    lagsol(:forward),
-    label = "forward",
-    title = "Lagrangian descriptors",
-    titlefont = 10,
-)
-plot!(uu0, lagsol(:backward), label = "backward")
-plot!(uu0, lagsol(), label = "total")
-plot!(uu0, lagsol(:difference), label = "difference")
-
-savefig("img/cubic2.png")
-```
-
-![Cubic nonautonous](img/cubic2.png)

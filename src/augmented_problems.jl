@@ -176,8 +176,8 @@ function augmentprob(prob::RODEProblem, M; direction::Symbol = :both)
     augprob = begin
         if prob.noise !== nothing
             RODEProblem(faug, uaug0, prob.tspan, prob.p; noise = prob.noise, prob.kwargs...)
-        elseif haskey(prob.kwargs, :noise_prototype)
-            RODEProblem(faug, uaug0, prob.tspan, prob.p; prob.kwargs...)
+        elseif prob.rand_prototype !== nothing
+            RODEProblem(faug, uaug0, prob.tspan, prob.p; rand_prototype = prob.rand_prototype, prob.kwargs...)
         else
             RODEProblem(faug, uaug0, prob.tspan, prob.p; noise = WienerProcess(0.0, 0.0), prob.kwargs...)
         end

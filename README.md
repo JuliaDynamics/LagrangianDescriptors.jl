@@ -49,33 +49,6 @@ plot(lagsol)
 
 ![Duffing Lagrangian descriptor](docs/src/img/duffing.png)
 
-We can also plot just the forward and just the backward descriptors with an extra parameter:
-
-```julia
-plot(lagsol, :forward, title="Forward Lagrangian descriptors for the forced Duffing with A=$A and ω=$ω", titlefont=8)
-
-plot(lagsol, :backward, title="Backward Lagrangian descriptors for the forced Duffing with A=$A and ω=$ω", titlefont=8)
-```
-
-![Duffing forward Lagrangian descriptor](docs/src/img/duffing_forward.png)
-![Duffing backward Lagrangian descriptor](docs/src/img/duffing_backward.png)
-
-Now, with a different set of parameters and a different window of initial conditions:
-
-```julia
-A = 12.0; ω = 2π; p = (A, ω);
-
-uu0 = [[x, y] for y in range(-0.5, 0.0, length=501), x in range(-0.6, 0.1, length=501)]
-
-lagprob = LagrangianDescriptorProblem(prob, M, uu0)
-
-lagsol = solve(lagprob, Tsit5());
-
-plot(lagsol, title="Lagrangian descriptors - Duffing with A=$A, ω=2π", titlefont=8)
-```
-
-![Duffing Lagrangian descriptor](docs/src/img/duffing2.png)
-
 ## References
 
 * [Painting the Phase Portrait of a Dynamical System with the Computational Tool of Lagrangian Descriptors](https://www.ams.org/journals/notices/202206/noti2489/noti2489.html?adat=June/July%202022&trk=2489&galt=none&cat=feature&pdfissue=202206&pdffile=rnoti-p936.pdf)

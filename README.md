@@ -47,7 +47,7 @@ Then we use the built-in plot recipe to get the heatmap of the Lagrangian descri
 plot(lagsol)
 ```
 
-![Duffing Lagrangian descriptor](examples/img/duffing.png)
+![Duffing Lagrangian descriptor](docs/src/img/duffing.png)
 
 We can also plot just the forward and just the backward descriptors with an extra parameter:
 
@@ -57,8 +57,8 @@ plot(lagsol, :forward, title="Forward Lagrangian descriptors for the forced Duff
 plot(lagsol, :backward, title="Backward Lagrangian descriptors for the forced Duffing with A=$A and ω=$ω", titlefont=8)
 ```
 
-![Duffing forward Lagrangian descriptor](examples/img/duffing_forward.png)
-![Duffing backward Lagrangian descriptor](examples/img/duffing_backward.png)
+![Duffing forward Lagrangian descriptor](docs/src/img/duffing_forward.png)
+![Duffing backward Lagrangian descriptor](docs/src/img/duffing_backward.png)
 
 Now, with a different set of parameters and a different window of initial conditions:
 
@@ -74,7 +74,7 @@ lagsol = solve(lagprob, Tsit5());
 plot(lagsol, title="Lagrangian descriptors - Duffing with A=$A, ω=2π", titlefont=8)
 ```
 
-![Duffing Lagrangian descriptor](examples/img/duffing2.png)
+![Duffing Lagrangian descriptor](docs/src/img/duffing2.png)
 
 ## References
 

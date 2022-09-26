@@ -82,7 +82,7 @@ using LinearAlgebra: norm
     end
 end
 
-@testset "Lagrang Descr" begin
+@testset "Lag Desc RODE" begin
     @testset "linear OOP RODEProblem" begin
         f = function (u, p, t, W)
             u + p * W

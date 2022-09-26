@@ -169,7 +169,7 @@ using LinearAlgebra: norm
     end
 end
 
-@testset "Lagrang Descr" begin
+@testset "Lag Desc ODE" begin
     @testset "linear OOP ODEProblem" begin
         f = function (u, p, t)
             u

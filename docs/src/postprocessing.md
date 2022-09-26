@@ -14,13 +14,32 @@ This is much simpler to implement, *but* it has some drawbacks:
 
 Here we exemplify the idea by integrating a single solution of a scalar cubic equation using [JuliaMath/QuadGK.jl](https://github.com/JuliaMath/QuadGK.jl).
 
-It boils down to taking a solution `sol` of the `ODEProblem` and integrating the infinitesimal descriptor `M` with the apropriate arguments:
+It boils down to taking a solution `sol` of the `ODEProblem` and integrating the infinitesimal descriptor `M` with the apropriate arguments. In the case of a scalar ODE with an out-of-place right hand side `f=f(u, p, t)` and an infinitesimal descriptor `M=M(u, p, t)`, this is simply
 
 ```julia
-first(quadgk(t -> M(f.(sol(t)), nothing, nothing, nothing), first(tspan), last(tspan)))
+M(t) = M(sol(t), sol.prob.p, t)
+first(quadgk(M, minimum(tspan), maximum(tspan)))
 ```
 
-Here is a full code, testing and benchmarking the different approaches:
+For a more generic implementation for `ODESolution` types, in either in-place or out-of-place cases, and for either backward of forward descriptors, we define the function
+
+```julia postprocessing
+function lagrangian_descriptor(sol::ODESolution, M)
+    t0, tf = extrema(sol.prob.tspan)
+    integrand = isinplace(sol.prob) ?
+        function (t, du = similar(sol.prob.u0))
+            sol.prob.f(du, sol(t), sol.prob.p, t)
+            M(du, sol(t), sol.prob.p, t)
+        end :
+        function (t)
+            du = sol.prob.f(sol(t), sol.prob.p, t)
+            M(du, sol(t), sol.prob.p, t)
+        end
+    return first(quadgk(integrand, t0, tf))
+end
+```
+
+With this definition, we compare the two different approaches, making sure they yield the same result, up to approximation errors:
 
 ```julia postprocessing
 using OrdinaryDiffEq, Test
@@ -28,85 +47,91 @@ using LagrangianDescriptors
 using LagrangianDescriptors: augmentprob
 using LinearAlgebra: norm
 using QuadGK: quadgk
-using BenchmarkTools: @btime
 
-@testset "Augmented vs post-processing scalar ODE" begin
-    f = function (u)
-        u - u^3
-    end
-    f! = function (du, u, p, t)
-        du .= f.(u)
-    end
-    t0 = 0.0
-    tf = 5.0
-    tspan = (t0, tf)
-    n = 5
-    u0 = 0.1 .+ 0.7rand(n)
-    prob = ODEProblem(f!, u0, tspan)
-    @info "Create forward ODE problem:"
-    @btime ODEProblem($f!, $u0, $tspan)
-    tspanbwd = (tf, t0)
-    probbwd = remake(prob, tspan = (tf, t0))
-    @info "Remake for backward ODE problem:"
-    @btime remake($prob, tspan = $((tf, t0)))
-    solfwd = @test_nowarn solve(prob, Tsit5())
-    solbwd = @test_nowarn solve(probbwd, Tsit5())
-    @info "Solve forward ODE problem:"
-    @btime solve($prob, $(Tsit5()))
-    @info "Solve backward ODE problem:"
-    @btime solve($probbwd, $(Tsit5()))
+f(u) = u - u^3
+f!(du, u, p, t) = (du .= f.(u))
 
-    M = function (du, u, p, t)
-        norm(du)
-    end
-    augprob = @test_nowarn augmentprob(prob, M)
-    @info "Create augmented ODE problem:"
-    @btime augmentprob($prob, $M)
-    augsol = @test_nowarn solve(augprob, Tsit5())
-    @info "Solve Augmented ODE problem:"
-    @btime solve($augprob, $(Tsit5()))
+t0 = 0.0
+tf = 5.0
+n = 5
+u0 = 0.1 .+ 0.7rand(n)
 
-    postproc = function (sol, f, M, tspan)
-        first(quadgk(t -> M(f.(sol(t)), nothing, nothing, nothing), first(tspan), last(tspan)))
-    end
-    @test augsol.u[end].lfwd ≈ postproc(solfwd, f, M, tspan) rtol = 0.01
-    @info "Postprocessing for forward Lagrangian descriptor:"
-    @btime $postproc($solfwd, $f, $M, $tspan)
-    @test augsol.u[end].lbwd ≈ postproc(solbwd, f, M, tspan) atol = 0.01
-    @info "Postprocessing for backward Lagrangian descriptor:"
-    @btime $postproc($solbwd, $f, $M, $tspan)
+tspanfwd = (t0, tf)
+probfwd = ODEProblem(f!, u0, tspanfwd)
+
+tspanbwd = (tf, t0)
+probbwd = remake(probfwd, tspan = tspanbwd)
+
+solfwd = solve(probfwd, Tsit5())
+solbwd = solve(probbwd, Tsit5())
+
+M(du, u, p, t) = norm(du)
+
+augprob = augmentprob(probfwd, M)
+augsol = solve(augprob, Tsit5())
+
+@testset "Augmented vs post-processing" begin
+    @test augsol.u[end].lfwd ≈ lagrangian_descriptor(solfwd, M) rtol = 0.01
+    @test augsol.u[end].lbwd ≈ lagrangian_descriptor(solbwd, M) atol = 0.01
 end
 ```
 
-Here are the results of the tests comparing the results of the package with the results obtained computing the Lagrangian descriptor directly via QuadGK, just to make sure everything is being computed properly:
-
 ```zsh
-Test Summary:                           | Pass  Total   Time
-Augmented vs post-processing scalar ODE |    6      6  53.4s
-Test.DefaultTestSet("Augmented vs post-processing scalar ODE", Any[], 6, false, false, true, 1.664197063101466e9, 1.664197116484559e9)
+Test Summary:                | Pass  Total  Time
+Augmented vs post-processing |    2      2  0.2s
+Test.DefaultTestSet("Augmented vs post-processing", Any[], 2, false, false, true, 1.664213738359913e9, 1.664213738562828e9)
 ```
 
 ## Benchmark
 
-And here is the result of the above benchmark, with a single solution of the augmented system versus post-processing:
+And here is a benchmark with the above setup, with a single solution of the augmented system versus post-processing:
+
+```julia postprocessing
+using BenchmarkTools: @btime
+
+@info "Create forward ODE problem:"
+@btime ODEProblem($f!, $u0, $tspanfwd)
+
+@info "Remake for backward ODE problem:"
+@btime remake($probfwd, tspan = $tspanbwd)
+
+@info "Solve forward ODE problem:"
+@btime solve($probfwd, $(Tsit5()))
+
+@info "Solve backward ODE problem:"
+@btime solve($probbwd, $(Tsit5()))
+    
+@info "Create augmented ODE problem:"
+@btime augmentprob($probfwd, $M)
+    
+@info "Solve Augmented ODE problem:"
+@btime solve($augprob, $(Tsit5()))
+
+@info "Postprocessing for forward Lagrangian descriptor:"
+@btime $lagrangian_descriptor($solfwd, $M)
+
+@info "Postprocessing for backward Lagrangian descriptor:"
+@btime $lagrangian_descriptor($solbwd, $M)
+```
 
 ```zsh
 [ Info: Create forward ODE problem:
-  6.308 μs (66 allocations: 3.02 KiB)
+  4.327 μs (59 allocations: 2.34 KiB)
 [ Info: Remake for backward ODE problem:
-  2.125 ns (0 allocations: 0 bytes)
+  2.084 ns (0 allocations: 0 bytes)
 [ Info: Solve forward ODE problem:
-  6.408 μs (146 allocations: 15.31 KiB)
+  6.492 μs (146 allocations: 15.31 KiB)
 [ Info: Solve backward ODE problem:
-  6.417 μs (146 allocations: 15.31 KiB)
+  6.508 μs (146 allocations: 15.31 KiB)
 [ Info: Create augmented ODE problem:
-  10.166 μs (130 allocations: 6.38 KiB)
+  8.722 μs (130 allocations: 6.38 KiB)
 [ Info: Solve Augmented ODE problem:
-  15.167 μs (249 allocations: 32.25 KiB)
+  22.916 μs (388 allocations: 38.05 KiB)
 [ Info: Postprocessing for forward Lagrangian descriptor:
-  54.833 μs (933 allocations: 88.88 KiB)
+  97.750 μs (1488 allocations: 140.91 KiB)
 [ Info: Postprocessing for backward Lagrangian descriptor:
-  30.083 μs (513 allocations: 49.50 KiB)
+  44.375 μs (677 allocations: 63.64 KiB)
+1.0964245933425085
 ```
 
 We see that solving both forward and backward equations separately is a bit faster than solving the augmented system with both forward and backward evolutions together, but the latter also includes the computations of the Lagrangian descriptors. The number of allocations and memory are about the same.

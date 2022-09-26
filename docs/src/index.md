@@ -38,8 +38,6 @@ lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 lagsol = solve(lagprob, Tsit5())
 
 plot(lagsol, :forward, size=(1280, 640), colorbar=false, axes=false, ticks=false)
-
-savefig("img/duffing_socialpreview.png")
 ```
 
 ## Method

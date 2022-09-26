@@ -2,9 +2,8 @@ using LagrangianDescriptors
 using OrdinaryDiffEq, Plots, QuadGK, Test
 using LagrangianDescriptors: augmentprob
 using LinearAlgebra: norm
-using BenchmarkTools: @btime
 
-@testset "Augmented ODEs" begin
+@testset "Augmented ODE" begin
     @testset "Linear OOP" begin
         f = function (u, p, t)
             p * u
@@ -169,46 +168,7 @@ using BenchmarkTools: @btime
     end
 end
 
-#= @testset "benmarks" begin
-    f = function (u) u - u^3 end
-    f! = function (du, u, p, t) du .= f.(u) end
-    t0 = 0.0
-    tf = 5.0
-    tspan = (t0, tf)
-    n = 5
-    u0 = 0.1 .+ 0.7rand(n)
-    prob = ODEProblem(f!, u0, tspan)
-    @info "Create forward ODE problem:"
-    @btime ODEProblem($f!, $u0, $tspan)
-    tspanbwd = (tf, t0)
-    probbwd = remake(prob, tspan = (tf, t0))
-    @info "Remake for backward ODE problem:"
-    @btime remake($prob, tspan = $((tf, t0)))
-    solfwd = @test_nowarn solve(prob, Tsit5())
-    solbwd = @test_nowarn solve(probbwd, Tsit5())
-    @info "Solve forward ODE problem:"
-    @btime solve($prob, $(Tsit5()))
-    @info "Solve backward ODE problem:"
-    @btime solve($probbwd, $(Tsit5()))
-
-    M = function (du, u, p, t) norm(du) end
-    augprob = @test_nowarn augmentprob(prob, M)
-    @info "Create augmented ODE problem:"
-    @btime augmentprob($prob, $M)
-    augsol = @test_nowarn solve(augprob, Tsit5())
-    @info "Solve Augmented ODE problem:"
-    @btime solve($augprob, $(Tsit5()))
-
-    postproc = function (sol, f, M, tspan) first(quadgk(t -> M(f.(sol(t)), nothing, nothing, nothing), first(tspan), last(tspan))) end
-    @test augsol.u[end].lfwd ≈ postproc(solfwd, f, M, tspan) rtol = 0.01
-    @info "Postprocessing for forward Lagrangian descriptor:"
-    @btime $postproc($solfwd, $f, $M, $tspan)
-    @test augsol.u[end].lbwd ≈ postproc(solbwd, f, M, tspan) atol = 0.01
-    @info "Postprocessing for backward Lagrangian descriptor:"
-    @btime $postproc($solbwd, $f, $M, $tspan)
-end =#
-
-@testset "Lagrangian Descr." begin
+@testset "Lagrang Descr" begin
     @testset "linear OOP ODEProblem" begin
         f = function (u, p, t)
             u
@@ -257,6 +217,53 @@ end =#
             uu0;
             direction = :blah,
         )
+    end
+end
+
+@testset "Post-process" begin
+    f = function (u, p = nothing, t = nothing)
+        u - u^3
+    end
+    f! = function (du, u, p, t)
+        du .= f.(u)
+    end
+
+    t0 = 0.0
+    tf = 5.0
+    tspanfwd = (t0, tf)
+    tspanbwd = (tf, t0)
+
+    M = function (du, u, p, t) 
+        norm(du)
+    end
+
+    @testset "out of place" begin
+        u0 = 0.1 + 0.7rand()    
+        probfwd = ODEProblem(f, u0, tspanfwd) 
+        probbwd = remake(probfwd, tspan = tspanbwd)
+        solfwd = solve(probfwd, Tsit5())
+        solbwd = solve(probbwd, Tsit5())
+    
+        augprob = augmentprob(probfwd, M)
+        augsol = solve(augprob, Tsit5())
+
+        @test augsol.u[end].lfwd ≈ lagrangian_descriptor(solfwd, M) rtol = 0.01
+        @test augsol.u[end].lbwd ≈ lagrangian_descriptor(solbwd, M) atol = 0.01
+    end
+
+    @testset "in place" begin
+        n = 5
+        u0 = 0.1 .+ 0.7rand(n)    
+        probfwd = ODEProblem(f!, u0, tspanfwd) 
+        probbwd = remake(probfwd, tspan = tspanbwd)
+        solfwd = solve(probfwd, Tsit5())
+        solbwd = solve(probbwd, Tsit5())
+    
+        augprob = augmentprob(probfwd, M)
+        augsol = solve(augprob, Tsit5())
+
+        @test augsol.u[end].lfwd ≈ lagrangian_descriptor(solfwd, M) rtol = 0.01
+        @test augsol.u[end].lbwd ≈ lagrangian_descriptor(solbwd, M) atol = 0.01
     end
 end
 

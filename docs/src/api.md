@@ -18,3 +18,9 @@ LagrangianDescriptors.LagrangianDescriptorSolution
 ```@docs
 LagrangianDescriptors.solve
 ```
+
+## Post-processing
+
+```@docs
+LagrangianDescriptors.lagrangian_descriptor
+```

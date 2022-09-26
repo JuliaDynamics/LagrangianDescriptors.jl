@@ -1,12 +1,45 @@
 # LagrangianDescriptors.jl documentation
 
+Painting the phase portrait of deterministic and stochastic systems.
+
+![Social preview](img/duffing_socialpreview.png)
 ## About
 
 The dynamics of evolutionary systems can be quite intricate. The method of **Lagrangian Descriptors** helps to visualize the complicate behavior of such systems and make sense of it. In a recent article, Wiggins and and García-Garrido call it [a method for] *painting the phase portrait* (of a dynamical system) (see [S. Wiggins and V. J. García-Garrido, Painting the Phase Portrait of a Dynamical System with the Computational Tool of Lagrangian Descriptors (AMS Notices, June/July 2022)](https://www.ams.org/journals/notices/202206/noti2489/noti2489.html?adat=June/July%202022&trk=2489&galt=none&cat=feature&pdfissue=202206&pdffile=rnoti-p936.pdf).
 
-The image below, for instance, shows the dynamics of a periodically-forced Duffing equation, with a particular combination of parameters and near time $t=0$ (see [Tutorial: Periodically-forced Duffing equation](tutorial_ODEs.md#Periodically-forced-Duffing-equation)):
+The image above, for instance, shows the dynamics of a periodically-forced Duffing equation, with a particular combination of parameters and near time $t=0$.
 
-![Duffing](img/duffing.png)
+## Example
+
+Here is the code that generates the image above, displaying some dynamic features of the Duffing equation.
+
+```julia
+using OrdinaryDiffEq, Plots
+using LinearAlgebra: norm
+using LagrangianDescriptors
+
+function f!(du, u, p, t)
+    x, y = u
+    A, ω = p
+    du[1] = y
+    du[2] = x - x^3 + A * cos(ω * t)
+end
+
+u0 = [0.5, 2.2]
+tspan = (0.0, 13.0)
+A = 5.0; ω = 2π; p = (A, ω);
+prob = ODEProblem(f!, u0, tspan, p)
+
+M(du, u, p, t) = norm(du)
+uu0 = [[x, y] for y in range(-0.7, 0.3, length=301), x in range(-0.5, 1.5, length=601)]
+lagprob = LagrangianDescriptorProblem(prob, M, uu0)
+
+lagsol = solve(lagprob, Tsit5())
+
+plot(lagsol, :forward, size=(1280, 640), colorbar=false, axes=false, ticks=false)
+
+savefig("img/duffing_socialpreview.png")
+```
 
 ## Method
 

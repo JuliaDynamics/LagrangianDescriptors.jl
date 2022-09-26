@@ -121,7 +121,7 @@ More precisely, the implementation works as follows:
 
 ## Current state
 
-The package is still in an embrionary phase and currently accepts differential equations of the type `ODEProblem`. Problems like `SDEProblem` and `RODEProblem` will be implemented soon. Other problems will come eventually.
+The package is still in an embrionary phase and currently accepts differential equations of the type `ODEProblem` or `RODEProblem`. Problems of the type `SDEProblem` will be implemented soon. Other problems will come eventually.
 
 The plot recipe works for some types of collections of initial conditions (e.g. a `AbstractVector{<:Number}`, for scalar problems, and `AbstractMatrix{<:AbstractVector{<:Number}}` with the `AbstractVector` of length two, for two-dimensional problems). More general and flexible plot recipes will also be implemented.
 

@@ -7,6 +7,7 @@ makedocs(
         "Overview" => "index.md"
         "Tutorials" => [
             "ODEs" => "tutorial_ODEs.md",
+            "RODEs" => "tutorial_RODEs.md",
             "Alternative via post-processing" => "postprocessing.md"
         ]
         "API" => "api.md"

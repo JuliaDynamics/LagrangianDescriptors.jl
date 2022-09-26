@@ -1,6 +1,7 @@
 module LagrangianDescriptors
 
-using SciMLBase, ComponentArrays, RecipesBase
+using SciMLBase, DiffEqNoiseProcess
+using ComponentArrays, RecipesBase
 using QuadGK: quadgk
 import DiffEqBase: solve
 export LagrangianDescriptorProblem, LagrangianDescriptorSolution, lagrangian_descriptor

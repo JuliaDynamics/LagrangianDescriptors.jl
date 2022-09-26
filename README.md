@@ -8,6 +8,8 @@ Implementation of the method of **Lagrangian Descriptors** to highlight singular
 
 ## Examples
 
+### Periodically forced Duffing oscillator
+
 Here in an example on a periodically forced Duffing system.
 
 ```julia
@@ -51,7 +53,9 @@ plot(lagsol)
 
 ![Duffing Lagrangian descriptor](docs/src/img/duffing.png)
 
-And here is a painting of a *random* Duffing, detailed in the Tutorials part of the documentation:
+### Random Duffing oscillator
+
+And here is a painting of a *random* Duffing oscillator, detailed in the Tutorials part of the documentation:
 
 ![Random Duffing Lagrangian descriptor](docs/src/img/duffing_random.png)
 

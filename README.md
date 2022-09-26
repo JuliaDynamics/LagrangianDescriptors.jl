@@ -6,7 +6,7 @@
 
 Implementation of the method of **Lagrangian Descriptors** to highlight singular features (e.g. stable or unstable invariant manifolds) of the dynamics of an evolutionary system (such as ordinary or partial differential equations, random equations, or stochastic differential equations).
 
-## Example
+## Examples
 
 Here in an example on a periodically forced Duffing system.
 
@@ -50,6 +50,10 @@ plot(lagsol)
 ```
 
 ![Duffing Lagrangian descriptor](docs/src/img/duffing.png)
+
+And here is a painting of a *random* Duffing, detailed in the Tutorials part of the documentation:
+
+![Random Duffing Lagrangian descriptor](docs/src/img/duffing_random.png)
 
 ## References
 

@@ -14,6 +14,14 @@ This is much simpler to implement, *but* it has some drawbacks:
 
 Here we exemplify the idea by integrating a single solution of a scalar cubic equation using [JuliaMath/QuadGK.jl](https://github.com/JuliaMath/QuadGK.jl).
 
+It boils down to taking a solution `sol` of the `ODEProblem` and integrating the infinitesimal descriptor `M` with the apropriate arguments:
+
+```julia
+first(quadgk(t -> M(f.(sol(t)), nothing, nothing, nothing), first(tspan), last(tspan)))
+```
+
+Here is a full code, testing and benchmarking the different approaches:
+
 ```julia postprocessing
 using OrdinaryDiffEq, Test
 using LagrangianDescriptors

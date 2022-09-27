@@ -4,17 +4,22 @@ We considere, here, some examples of applying the Lagragian descriptor method to
 
 ## Periodically-forced Duffing equation
 
-We start with an application of the method of Lagrangian descriptors to the periodically-forced Duffing equation
+We start with an application of the method of Lagrangian descriptors to the periodically-forced Duffing equation, as illustrated in [Painting the Phase Portrait of a Dynamical System with the Computational Tool of Lagrangian Descriptors](https://www.ams.org/journals/notices/202206/noti2489/noti2489.html?adat=June/July%202022&trk=2489&galt=none&cat=feature&pdfissue=202206&pdffile=rnoti-p936.pdf). The equation takes the form
 
 ```math
 \ddot x = x - x^3 + A\sin(\omega t).
 ```
 
-With `LagrangianDescriptors.jl`, we start by setting up the equation as an `ODEProblem` from [SciML/DifferentialEquations.jl](https://github.com/SciML/DifferentialEquations.jl).
+We write it as a system
 
-Next, we wrap that as a `LagrangianDescriptorProblem` from `LagrangianDescriptors.jl`, which we can solve as an ensemble problem.
+```math
+\begin{cases}
+  \dot x = y, \\
+  \dot y = x - x^3 + A\sin(\omega t).
+\end{cases}
+```
 
-Finally, we plot the result with the built-in plot recipe.
+The idea is to set up this system as an `ODEProblem` from [SciML/DifferentialEquations.jl](https://github.com/SciML/DifferentialEquations.jl), then wrap it as a `LagrangianDescriptorProblem` from `LagrangianDescriptors.jl`, which we can then solve as an ensemble problem and plot the result.
 
 So we first load the relevant packages:
 
@@ -31,7 +36,7 @@ function f!(du, u, p, t)
     x, y = u
     A, ω = p
     du[1] = y
-    du[2] = x - x^3 + A * cos(ω * t)
+    du[2] = x - x^3 + A * sin(ω * t)
 end
 
 u0 = [0.5, 2.2]
@@ -85,9 +90,9 @@ savefig("img/duffing2.png")
 If we want to change parameters, we just `remake` the original `ODEProblem` (in the future I should add the option to remake the `LagrangianDescriptorProblem` itself.)
 
 ```julia
-A = 5.0; ω = 2π; p = (A, ω);
+A = 2.0; ω = 2π; p = (A, ω);
 prob = remake(prob, p=p)
-uu0 = [[x, y] for y in range(-0.5, 0.2, length=501), x in range(-0.3, 0.2, length=401)]
+uu0 = [[x, y] for y in range(-0.6, -0.1, length=501), x in range(-0.2, 0.3, length=401)]
 lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 
 lagsol = solve(lagprob, Tsit5());

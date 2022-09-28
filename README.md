@@ -21,7 +21,7 @@ function f!(du, u, p, t)
     x, y = u
     A, ω = p
     du[1] = y
-    du[2] = x - x^3 + A * cos(ω * t)
+    du[2] = x - x^3 + A * sin(ω * t)
 end
 
 u0 = [0.5, 2.2]

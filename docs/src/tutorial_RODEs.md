@@ -17,7 +17,7 @@ With `LagrangianDescriptors.jl`, we i) start by setting up the equation as a `RO
 So we first load the relevant packages:
 
 ```julia rode-duffing
-using StochasticDiffEq
+using StochasticDiffEq, DiffEqNoiseProcess
 using Plots
 using LinearAlgebra: norm
 using LagrangianDescriptors
@@ -35,8 +35,9 @@ end
 p = 0.025
 u0 = [0.5, 2.2]
 tspan = (0.0, 8.0)
+W = WienerProcess(0.0, 0.0)
 
-prob = RODEProblem(f!, u0, tspan, p)
+prob = RODEProblem(f!, u0, tspan, p, noise=W)
 ```
 
 With the RODE problem setup, we choose an infinitesimal Lagrangian descriptor, a collection of initial conditions on the phase space, which is the region to be "painted", and finally we build the `LagrangianDescriptorProblem`:

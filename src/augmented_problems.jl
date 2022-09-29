@@ -2,7 +2,7 @@
 # Currently it is only implemented for `ODEProblem`.
 
 """
-    augmentprob(prob::ODEProblem, M; direction::Symbol=:both
+    augmentprob(prob::ODEProblem, M; direction::Symbol=:both)
 
 Create an augmented `ODEProblem` by aggregating the forward and backward Lagrangian descriptors to the given `ODEProblem`.
 
@@ -90,7 +90,7 @@ function augmentprob(prob::ODEProblem, M; direction::Symbol = :both)
 end
 
 """
-    augmentprob(prob::RODEProblem, M; direction::Symbol=:both
+    augmentprob(prob::RODEProblem, M; direction::Symbol=:both)
 
 Create an augmented `RODEProblem` by aggregating the forward and backward Lagrangian descriptors to the given `RODEProblem`.
 

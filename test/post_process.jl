@@ -1,10 +1,10 @@
 using LagrangianDescriptors
-using OrdinaryDiffEq, StochasticDiffEq
-using QuadGK, Test
 using LagrangianDescriptors: augmentprob
+using OrdinaryDiffEq, StochasticDiffEq, DiffEqNoiseProcess
+using QuadGK, Test
 using LinearAlgebra: norm
 
-@testset "Post-process" begin
+@testset "Post-proc ODE" begin
     f = function (u, p = nothing, t = nothing)
         u - u^3
     end
@@ -51,3 +51,52 @@ using LinearAlgebra: norm
     end
 end
 
+@testset "Post-proc RODE" begin
+    f = function (u, p, t, W)
+        u - u^3 + p * sin(W)
+    end
+    f! = function (du, u, p, t, W)
+        @. du = u - u^3 + p * sin(W)
+    end
+
+    t0 = 0.0
+    tf = 1.0
+    tspanfwd = (t0, tf)
+    tspanbwd = (tf, t0)
+
+    p = 0.01
+    W = WienerProcess(0.0, 0.0)
+
+    M = function (du, u, p, t, W) 
+        norm(du)
+    end
+
+    @testset "out of place" begin
+        u0 = 0.1 + 0.7rand()    
+        probfwd = RODEProblem(f, u0, tspanfwd, p, noise=W) 
+        probbwd = remake(probfwd, tspan = tspanbwd)
+        solfwd = solve(probfwd, RandomHeun(), dt=1/200)
+        solbwd = solve(probbwd, RandomHeun(), dt=1/200)
+    
+        augprob = augmentprob(probfwd, M)
+        augsol = solve(augprob, RandomHeun(), dt=1/50)
+
+        @test augsol.u[end].lfwd ≈ lagrangian_descriptor(solfwd, M) rtol = 0.1
+        @test augsol.u[end].lbwd ≈ lagrangian_descriptor(solbwd, M) rtol = 0.1
+    end
+
+    @testset "in place" begin
+        n = 5
+        u0 = 0.1 .+ 0.7rand(n)    
+        probfwd = RODEProblem(f!, u0, tspanfwd, p, noise=W) 
+        probbwd = remake(probfwd, tspan = tspanbwd)
+        solfwd = solve(probfwd, RandomHeun(), dt=1/200)
+        solbwd = solve(probbwd, RandomHeun(), dt=1/200)
+    
+        augprob = augmentprob(probfwd, M)
+        augsol = solve(augprob, RandomHeun(), dt=1/50)
+
+        @test augsol.u[end].lfwd ≈ lagrangian_descriptor(solfwd, M) rtol = 0.1
+        @test augsol.u[end].lbwd ≈ lagrangian_descriptor(solbwd, M) rtol = 0.1
+    end
+end

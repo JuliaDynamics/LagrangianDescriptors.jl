@@ -63,17 +63,17 @@ struct LagrangianDescriptorProblem{T1,T2,T3}
     direction::T3
     method::Symbol
 
-    function LagrangianDescriptorProblem(prob, M, uu0; direction::Symbol = :both, method::Symbol=:augmented, kwargs...)
-        ensprob = get_ensemble_problem(prob, M, uu0; direction, method, kwargs...)
+    function LagrangianDescriptorProblem(prob, M, uu0; direction::Symbol = :both, method::Symbol=:augmented)
+        ensprob = get_ensemble_problem(prob, M, uu0; direction, method)
         return new{typeof(ensprob),typeof(uu0),typeof(direction)}(ensprob, uu0, direction, method)
     end    
 end
 
-function get_ensemble_problem(prob, M, uu0; direction::Symbol=:both, method::Symbol=:augmented, kwargs...)
+function get_ensemble_problem(prob, M, uu0; direction::Symbol=:both, method::Symbol=:augmented)
     if method == :augmented
-        return _get_ensemble_problem_augmented(prob, M, uu0; direction, kwargs...)
+        return _get_ensemble_problem_augmented(prob, M, uu0; direction)
     elseif method == :postprocessed
-        return _get_ensemble_problem_postprocessed(prob, M, uu0; direction, kwargs...)
+        return _get_ensemble_problem_postprocessed(prob, M, uu0; direction)
     else
         throw(
             ArgumentError(
@@ -83,7 +83,7 @@ function get_ensemble_problem(prob, M, uu0; direction::Symbol=:both, method::Sym
     end
 end
 
-function _get_ensemble_problem_augmented(prob, M, uu0; direction::Symbol=:both, kwargs...)
+function _get_ensemble_problem_augmented(prob, M, uu0; direction::Symbol=:both)
     if direction == :both
         prob_func = function (augprob, i, repeat; uu0 = uu0)
             remake(
@@ -122,22 +122,23 @@ function _get_ensemble_problem_augmented(prob, M, uu0; direction::Symbol=:both, 
     end
 
     augprob = augmentprob(prob, M; direction)
-    ensprob = EnsembleProblem(augprob, prob_func = prob_func, output_func = output_func, kwargs...)
+    ensprob = EnsembleProblem(augprob, prob_func = prob_func, output_func = output_func)
 
    return ensprob
 end
 
-function _get_ensemble_problem_postprocessed(prob, M, uu0; direction::Symbol=:both, kwargs...)
+function _get_ensemble_problem_postprocessed(prob, M, uu0; direction::Symbol=:both)
     if direction == :both
         prob_func = function (prob, i, repeat; uu0 = uu0)
-            isodd(i) ? remake(prob, u0 = uu0[div(i+1,2)], tspan = extrema(prob.tspan)) : remake(prob, tspan = reverse(extrema(prob.tspan)))
+            isodd(i) ? remake(prob, u0 = uu0[div(i+1,2)], tspan = extrema(prob.tspan)) : remake(prob, u0 = uu0[div(i+1,2)], tspan = reverse(extrema(prob.tspan)))
         end
         output_func = function (sol, i)
             (lagrangian_descriptor(sol, M), false)
         end
         reduction_func = function (u, batch, I)
-            (append!(u, ComponentArray(lfwd = batch[1], lbwd = batch[2])), false)
+            (append!(u, [ComponentArray(lfwd = batch[1], lbwd = batch[2])]), false)
         end
+        u_init = Vector{ComponentVector{Float64, Vector{Float64}, Tuple{Axis{(lfwd = 1, lbwd = 2)}}}}()
     elseif direction == :forward
         prob_func = function (prob, i, repeat; uu0 = uu0)
             remake(prob, u0 = uu0[i])
@@ -146,8 +147,9 @@ function _get_ensemble_problem_postprocessed(prob, M, uu0; direction::Symbol=:bo
             (lagrangian_descriptor(sol, M), false)
         end
         reduction_func = function (u, batch, I)
-            (append!(u, ComponentArray(lfwd = batch[1])), false)
+            (append!(u, [ComponentArray(lfwd = batch[1])]), false)
         end
+        u_init = Vector{ComponentVector{Float64, Vector{Float64}, Tuple{Axis{(lfwd = 1,)}}}}()
     elseif direction == :backward
         prob_func = function (prob, i, repeat; uu0 = uu0)
             remake(prob, u0 = uu0[i], tspan = reverse(extrema(prob.tspan)))
@@ -156,8 +158,9 @@ function _get_ensemble_problem_postprocessed(prob, M, uu0; direction::Symbol=:bo
             (lagrangian_descriptor(sol, M), false)
         end
         reduction_func = function (u, batch, I)
-            (append!(u, ComponentArray(lbwd = batch[1])), false)
+            (append!(u, [ComponentArray(lbwd = batch[1])]), false)
         end
+        u_init = Vector{ComponentVector{Float64, Vector{Float64}, Tuple{Axis{(lbwd = 1,)}}}}()
     else
         throw(
             ArgumentError(
@@ -166,7 +169,7 @@ function _get_ensemble_problem_postprocessed(prob, M, uu0; direction::Symbol=:bo
         )
     end
 
-    ensprob = EnsembleProblem(prob, prob_func = prob_func, output_func = output_func, reduction = reduction_func, kwargs...)
+    ensprob = EnsembleProblem(prob, prob_func = prob_func, output_func = output_func, reduction = reduction_func, u_init=u_init)
 
    return ensprob
 end

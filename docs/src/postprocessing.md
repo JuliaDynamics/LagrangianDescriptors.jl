@@ -4,13 +4,13 @@ Alternatively, instead of augmenting the system and computing the descriptor alo
 
 ## Drawbacks
 
-This is much simpler to implement, *but* it has some drawbacks:
+For individual solutions, this is much simpler to implement, *but* it has some drawbacks:
 
 1. First, we will need to save each trajectory in full, for later post-processing, instead of only ``L_\mathrm{fwd}(t_f)`` and ``L_\mathrm{bwd}(t_f)``. Hence, this is much more memory demanding. Keep in mind we need to solve for a lot of trajectories.
 1. If we want the backward Lagrangian descriptors, we also need to set up and solve the system backward.
 1. Some solutions may have some spread out time steps saved by the solver. We either have to force it to save on a fine time mesh for an faster and accurate integration, or we use the interpolation present in the solution, which is usually much slower to compute.
 
-## Example
+## Example of post-processing a single solution
 
 Here we exemplify the idea by integrating a single solution of a scalar cubic equation using [JuliaMath/QuadGK.jl](https://github.com/JuliaMath/QuadGK.jl).
 
@@ -137,3 +137,45 @@ using BenchmarkTools: @btime
 We see that solving both forward and backward equations separately is a bit faster than solving the augmented system with both forward and backward evolutions together, but the latter also includes the computations of the Lagrangian descriptors. The number of allocations and memory are about the same.
 
 On the other hand, solving the forward and backward equations separately requires a post-processing step for each forward and backward evolutions to obtain the Lagrangian descriptors, and that takes quite a longer time and substantially more allocations and memory. And this was done for a single trajectory. Imagine for the ensemble of solutions, on top of the memory demand of saving the full solutions.
+
+## Ensemble post-processing
+
+Just for the sake of completeness, we also implemented an ensemble version of the post-processing approach. This uses the same API as before, but with the keyword `method = :postprocess` in `LagrangianDescriptorProblem`.
+
+```julia pp
+using OrdinaryDiffEq
+using Plots
+using LinearAlgebra: norm
+using LagrangianDescriptors
+```
+
+```julia pp
+function f!(du, u, p, t)
+    x, y = u
+    A, ω = p
+    du[1] = y
+    du[2] = x - x^3 + A * sin(ω * t)
+end
+
+u0 = [0.5, 2.2]
+tspan = (0.0, 13.0)
+A = 0.3; ω = π; p = (A, ω)
+
+prob = ODEProblem(f!, u0, tspan, p)
+```
+
+```julia pp
+M(du, u, p, t) = norm(du)
+
+uu0 = [[x, y] for y in range(-1.0, 1.0, length=101), x in range(-1.8, 1.8, length=101)]
+
+lagprob = LagrangianDescriptorProblem(prob, M, uu0, method=:postprocessed)
+```
+
+```julia pp
+@time lagsol = solve(lagprob, Tsit5())
+```
+
+```julia pp
+plot(lagsol, direction=:both)
+```

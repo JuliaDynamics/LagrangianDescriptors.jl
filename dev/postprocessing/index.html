@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Alternative via post-processing · LagrangianDescriptors.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link rel="canonical" href="https://github.com/JuliaDynamics/LagrangianDescriptors.jl/postprocessing/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">LagrangianDescriptors.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Overview</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../tutorial_ODEs/">ODEs</a></li><li><a class="tocitem" href="../tutorial_RODEs/">RODEs</a></li><li class="is-active"><a class="tocitem" href>Alternative via post-processing</a><ul class="internal"><li><a class="tocitem" href="#Drawbacks"><span>Drawbacks</span></a></li><li><a class="tocitem" href="#Example"><span>Example</span></a></li><li><a class="tocitem" href="#Benchmark"><span>Benchmark</span></a></li></ul></li></ul></li><li><a class="tocitem" href="../api/">API</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Alternative via post-processing</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Alternative via post-processing</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaDynamics/LagrangianDescriptors.jl/blob/main/docs/src/postprocessing.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Alternative-via-post-processing"><a class="docs-heading-anchor" href="#Alternative-via-post-processing">Alternative via post-processing</a><a id="Alternative-via-post-processing-1"></a><a class="docs-heading-anchor-permalink" href="#Alternative-via-post-processing" title="Permalink"></a></h1><p>Alternatively, instead of augmenting the system and computing the descriptor along with the solutions, we can just solve the original system as usual and then integrate the infinitesimal descriptor over the solution. This can be done for a single solution, backward and/or forward in time, or for an ensemble of solutions of the original system.</p><h2 id="Drawbacks"><a class="docs-heading-anchor" href="#Drawbacks">Drawbacks</a><a id="Drawbacks-1"></a><a class="docs-heading-anchor-permalink" href="#Drawbacks" title="Permalink"></a></h2><p>This is much simpler to implement, <em>but</em> it has some drawbacks:</p><ol><li>First, we will need to save each trajectory in full, for later post-processing, instead of only <span>$L_\mathrm{fwd}(t_f)$</span> and <span>$L_\mathrm{bwd}(t_f)$</span>. Hence, this is much more memory demanding. Keep in mind we need to solve for a lot of trajectories.</li><li>If we want the backward Lagrangian descriptors, we also need to set up and solve the system backward.</li><li>Some solutions may have some spread out time steps saved by the solver. We either have to force it to save on a fine time mesh for an faster and accurate integration, or we use the interpolation present in the solution, which is usually much slower to compute.</li></ol><h2 id="Example"><a class="docs-heading-anchor" href="#Example">Example</a><a id="Example-1"></a><a class="docs-heading-anchor-permalink" href="#Example" title="Permalink"></a></h2><p>Here we exemplify the idea by integrating a single solution of a scalar cubic equation using <a href="https://github.com/JuliaMath/QuadGK.jl">JuliaMath/QuadGK.jl</a>.</p><p>It boils down to taking a solution <code>sol</code> of the <code>ODEProblem</code> and integrating the infinitesimal descriptor <code>M</code> with the apropriate arguments. In the case of a scalar ODE with an out-of-place right hand side <code>f=f(u, p, t)</code> and an infinitesimal descriptor <code>M=M(u, p, t)</code>, this is simply</p><pre><code class="language-julia hljs">M(t) = M(sol(t), sol.prob.p, t)
+first(quadgk(M, minimum(tspan), maximum(tspan)))</code></pre><p>For a more generic implementation for <code>ODESolution</code> types, in either in-place or out-of-place cases, and for either backward of forward descriptors, we define the function</p><pre><code class="language-julia hljs">function lagrangian_descriptor(sol::ODESolution, M)
+    t0, tf = extrema(sol.prob.tspan)
+    integrand = isinplace(sol.prob) ?
+        function (t, du = similar(sol.prob.u0))
+            sol.prob.f(du, sol(t), sol.prob.p, t)
+            M(du, sol(t), sol.prob.p, t)
+        end :
+        function (t)
+            du = sol.prob.f(sol(t), sol.prob.p, t)
+            M(du, sol(t), sol.prob.p, t)
+        end
+    return first(quadgk(integrand, t0, tf))
+end</code></pre><p>With this definition, we compare the two different approaches, making sure they yield the same result, up to approximation errors:</p><pre><code class="language-julia hljs">using OrdinaryDiffEq, Test
+using LagrangianDescriptors
+using LagrangianDescriptors: augmentprob
+using LinearAlgebra: norm
+using QuadGK: quadgk
+
+f(u) = u - u^3
+f!(du, u, p, t) = (du .= f.(u))
+
+t0 = 0.0
+tf = 5.0
+n = 5
+u0 = 0.1 .+ 0.7rand(n)
+
+tspanfwd = (t0, tf)
+probfwd = ODEProblem(f!, u0, tspanfwd)
+
+tspanbwd = (tf, t0)
+probbwd = remake(probfwd, tspan = tspanbwd)
+
+solfwd = solve(probfwd, Tsit5())
+solbwd = solve(probbwd, Tsit5())
+
+M(du, u, p, t) = norm(du)
+
+augprob = augmentprob(probfwd, M)
+augsol = solve(augprob, Tsit5())
+
+@testset &quot;Augmented vs post-processing&quot; begin
+    @test augsol.u[end].lfwd ≈ lagrangian_descriptor(solfwd, M) rtol = 0.01
+    @test augsol.u[end].lbwd ≈ lagrangian_descriptor(solbwd, M) atol = 0.01
+end</code></pre><pre><code class="language-zsh hljs">Test Summary:                | Pass  Total  Time
+Augmented vs post-processing |    2      2  0.2s
+Test.DefaultTestSet(&quot;Augmented vs post-processing&quot;, Any[], 2, false, false, true, 1.664213738359913e9, 1.664213738562828e9)</code></pre><h2 id="Benchmark"><a class="docs-heading-anchor" href="#Benchmark">Benchmark</a><a id="Benchmark-1"></a><a class="docs-heading-anchor-permalink" href="#Benchmark" title="Permalink"></a></h2><p>And here is a benchmark with the above setup, with a single solution of the augmented system versus post-processing:</p><pre><code class="language-julia hljs">using BenchmarkTools: @btime
+
+@info &quot;Create forward ODE problem:&quot;
+@btime ODEProblem($f!, $u0, $tspanfwd)
+
+@info &quot;Remake for backward ODE problem:&quot;
+@btime remake($probfwd, tspan = $tspanbwd)
+
+@info &quot;Solve forward ODE problem:&quot;
+@btime solve($probfwd, $(Tsit5()))
+
+@info &quot;Solve backward ODE problem:&quot;
+@btime solve($probbwd, $(Tsit5()))
+    
+@info &quot;Create augmented ODE problem:&quot;
+@btime augmentprob($probfwd, $M)
+    
+@info &quot;Solve Augmented ODE problem:&quot;
+@btime solve($augprob, $(Tsit5()))
+
+@info &quot;Postprocessing for forward Lagrangian descriptor:&quot;
+@btime $lagrangian_descriptor($solfwd, $M)
+
+@info &quot;Postprocessing for backward Lagrangian descriptor:&quot;
+@btime $lagrangian_descriptor($solbwd, $M)</code></pre><pre><code class="language-zsh hljs">[ Info: Create forward ODE problem:
+  4.327 μs (59 allocations: 2.34 KiB)
+[ Info: Remake for backward ODE problem:
+  2.084 ns (0 allocations: 0 bytes)
+[ Info: Solve forward ODE problem:
+  6.492 μs (146 allocations: 15.31 KiB)
+[ Info: Solve backward ODE problem:
+  6.508 μs (146 allocations: 15.31 KiB)
+[ Info: Create augmented ODE problem:
+  8.722 μs (130 allocations: 6.38 KiB)
+[ Info: Solve Augmented ODE problem:
+  22.916 μs (388 allocations: 38.05 KiB)
+[ Info: Postprocessing for forward Lagrangian descriptor:
+  97.750 μs (1488 allocations: 140.91 KiB)
+[ Info: Postprocessing for backward Lagrangian descriptor:
+  44.375 μs (677 allocations: 63.64 KiB)
+1.0964245933425085</code></pre><p>We see that solving both forward and backward equations separately is a bit faster than solving the augmented system with both forward and backward evolutions together, but the latter also includes the computations of the Lagrangian descriptors. The number of allocations and memory are about the same.</p><p>On the other hand, solving the forward and backward equations separately requires a post-processing step for each forward and backward evolutions to obtain the Lagrangian descriptors, and that takes quite a longer time and substantially more allocations and memory. And this was done for a single trajectory. Imagine for the ensemble of solutions, on top of the memory demand of saving the full solutions.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../tutorial_RODEs/">« RODEs</a><a class="docs-footer-nextpage" href="../api/">API »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.23 on <span class="colophon-date" title="Friday 30 September 2022 00:05">Friday 30 September 2022</span>. Using Julia version 1.8.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

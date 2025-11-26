@@ -82,7 +82,8 @@ struct LagrangianDescriptorProblem{T1,T2,T3}
                 )
             end
             output_func = function (sol, i)
-                (ComponentArray(lfwd = sol.u[end].lfwd, lbwd = sol.u[end].lbwd), false)
+                terminated = sol.retcode == SciMLBase.ReturnCode.Terminated
+                (ComponentArray(lfwd = sol.u[end].lfwd, lbwd = sol.u[end].lbwd, terminated = terminated), false)
             end
         elseif direction == :forward
             prob_func = function (augprob, args...; uu0 = uu0)
@@ -90,7 +91,8 @@ struct LagrangianDescriptorProblem{T1,T2,T3}
                 remake(augprob, u0 = ComponentVector(fwd = uu0[i], lfwd = 0.0))
             end
             output_func = function (sol, i)
-                (ComponentArray(lfwd = sol.u[end].lfwd), false)
+                terminated = sol.retcode == SciMLBase.ReturnCode.Terminated
+                (ComponentArray(lfwd = sol.u[end].lfwd, terminated = terminated), false)
             end
         elseif direction == :backward
             prob_func = function (augprob, args...; uu0 = uu0)
@@ -98,7 +100,8 @@ struct LagrangianDescriptorProblem{T1,T2,T3}
                 remake(augprob, u0 = ComponentVector(bwd = uu0[i], lbwd = 0.0))
             end
             output_func = function (sol, i)
-                (ComponentArray(lbwd = sol.u[end].lbwd), false)
+                terminated = sol.retcode == SciMLBase.ReturnCode.Terminated
+                (ComponentArray(lbwd = sol.u[end].lbwd, terminated = terminated), false)
             end
         else
             throw(

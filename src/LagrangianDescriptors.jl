@@ -4,6 +4,7 @@ using SciMLBase, DiffEqNoiseProcess
 using ComponentArrays, RecipesBase
 using QuadGK: quadgk
 import DiffEqBase: solve
+using DiffEqBase: DiscreteCallback, CallbackSet, terminate!
 export LagrangianDescriptorProblem, LagrangianDescriptorSolution, lagrangian_descriptor
 
 include("augmented_problems.jl")

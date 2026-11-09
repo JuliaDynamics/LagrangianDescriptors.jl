@@ -2,6 +2,7 @@ using LagrangianDescriptors
 using LagrangianDescriptors: augmentprob
 using OrdinaryDiffEq, StochasticDiffEq, DiffEqNoiseProcess
 using QuadGK, Test
+using SciMLBase: EnsembleSerial, remake
 using LinearAlgebra: norm
 
 @testset "Post-proc ODE" begin

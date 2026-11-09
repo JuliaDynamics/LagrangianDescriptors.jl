@@ -1,22 +1,36 @@
-
 name: Documentation
 
 on:
   push:
     branches:
       - main
-    tags: '*'
+    tags: ['*']
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 
 jobs:
   docs-build:
     runs-on: ubuntu-latest
+    permissions:
+      actions: write      # for julia-actions/cache to delete old caches
+      contents: write     # to push to gh-pages
+      pull-requests: read # for preview builds
+      statuses: write     # to set the docs status check
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v5
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v2
       - name: Install dependencies
-        run: julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.build(;verbose=true)'
+        run: julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
       - name: Build and deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+          GKSwstype: "100" # headless mode for Plots/GR
         run: julia --project=docs/ docs/make.jl

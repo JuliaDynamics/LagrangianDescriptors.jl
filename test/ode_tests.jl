@@ -256,8 +256,12 @@ end
         # Some trajectories should have terminated (backward diverges for dissipative systems)
         @test any(lagsol.terminated)
 
-        # Test without max_trajectory_value (default Inf) - terminated should all be false
-        lagsol_no_term = solve(lagprob, Tsit5())
-        @test all(.!lagsol_no_term.terminated)
+        # Test without max_trajectory_value (default Inf) - terminated should all be false.
+        # Only integrate forward in time, where the dissipative system stays bounded;
+        # backward trajectories would blow up and run until the solver's maxiters.
+        lagprob_fwd = LagrangianDescriptorProblem(prob, M, uu0; direction=:forward)
+        lagsol_no_term = @test_nowarn solve(lagprob_fwd, Tsit5())
+        @test lagsol_no_term.terminated isa BitVector
+        @test !any(lagsol_no_term.terminated)
     end
 end

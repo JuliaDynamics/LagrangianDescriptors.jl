@@ -14,7 +14,7 @@ Representation of the solution to a [`LagrangianDescriptorProblem`](@ref).
 - `uu0`: the collection of initial conditions given in 
 the [`LagrangianDescriptorProblem`](@ref).
 - `direction:` the direction given in the [`LagrangianDescriptorProblem`](@ref).
-- `terminated`: a `BitVector` indicating which trajectories were terminated early 
+- `terminated`: a `BitVector` indicating which trajectories were terminated early
   (e.g., due to divergence when using `max_trajectory_value`).
 """
 struct LagrangianDescriptorSolution{T1,T2,T3}

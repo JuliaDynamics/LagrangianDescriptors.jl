@@ -37,11 +37,8 @@ function solve(prob::LagrangianDescriptorProblem, alg, args...; max_trajectory_v
     return LagrangianDescriptorSolution(sol, prob.uu0, prob.direction, terminated)
 end
 
-"""
-    _make_termination_condition(direction::Symbol, max_val::Real)
-
-Create a termination condition function that checks if trajectory components exceed `max_val`.
-"""
+# Internal helper: create a termination condition function that checks if
+# trajectory components exceed `max_val`, for the given `direction`.
 function _make_termination_condition(direction::Symbol, max_val::Real)
     if direction == :both
         return (u, t, integrator) -> maximum(abs, u.fwd) > max_val || maximum(abs, u.bwd) > max_val

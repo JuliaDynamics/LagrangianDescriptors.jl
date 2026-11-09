@@ -1,6 +1,7 @@
 using LagrangianDescriptors
 using StochasticDiffEq
 using QuadGK, Test
+using SciMLBase: EnsembleSerial, remake
 using LagrangianDescriptors: augmentprob
 using LinearAlgebra: norm
 

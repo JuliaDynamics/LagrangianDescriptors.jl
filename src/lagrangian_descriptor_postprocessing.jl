@@ -51,7 +51,7 @@ function lagrangian_descriptor(sol::RODESolution, M)
     du = isinplace(sol.prob) ? similar(sol.prob.u0) : copy(sol.prob.u0)
     ti1 = sol.t[1]
     mi1 = 0.0
-    for i in eachindex(sol)
+    for i in eachindex(sol.t)
         ti = sol.t[i]
         dt = ti - ti1
         if isinplace(sol.prob)

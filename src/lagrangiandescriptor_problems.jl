@@ -1,3 +1,8 @@
+# `EnsembleProblem` calls `prob_func(prob, i, repeat)` in SciMLBase < 3 and
+# `prob_func(prob, ctx::EnsembleContext)` in SciMLBase >= 3.
+_trajectory_index(i::Integer, repeat) = i
+_trajectory_index(ctx) = ctx.sim_id
+
 """
     LagrangianDescriptorProblem
 
@@ -64,7 +69,8 @@ struct LagrangianDescriptorProblem{T1,T2,T3}
 
     function LagrangianDescriptorProblem(prob, M, uu0; direction::Symbol = :both)
         if direction == :both
-            prob_func = function (augprob, i, repeat; uu0 = uu0)
+            prob_func = function (augprob, args...; uu0 = uu0)
+                i = _trajectory_index(args...)
                 remake(
                     augprob,
                     u0 = ComponentVector(
@@ -76,21 +82,23 @@ struct LagrangianDescriptorProblem{T1,T2,T3}
                 )
             end
             output_func = function (sol, i)
-                (ComponentArray(lfwd = last(sol).lfwd, lbwd = last(sol).lbwd), false)
+                (ComponentArray(lfwd = sol.u[end].lfwd, lbwd = sol.u[end].lbwd), false)
             end
         elseif direction == :forward
-            prob_func = function (augprob, i, repeat; uu0 = uu0)
+            prob_func = function (augprob, args...; uu0 = uu0)
+                i = _trajectory_index(args...)
                 remake(augprob, u0 = ComponentVector(fwd = uu0[i], lfwd = 0.0))
             end
             output_func = function (sol, i)
-                (ComponentArray(lfwd = last(sol).lfwd), false)
+                (ComponentArray(lfwd = sol.u[end].lfwd), false)
             end
         elseif direction == :backward
-            prob_func = function (augprob, i, repeat; uu0 = uu0)
+            prob_func = function (augprob, args...; uu0 = uu0)
+                i = _trajectory_index(args...)
                 remake(augprob, u0 = ComponentVector(bwd = uu0[i], lbwd = 0.0))
             end
             output_func = function (sol, i)
-                (ComponentArray(lbwd = last(sol).lbwd), false)
+                (ComponentArray(lbwd = sol.u[end].lbwd), false)
             end
         else
             throw(

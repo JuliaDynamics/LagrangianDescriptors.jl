@@ -220,4 +220,48 @@ end
             direction = :blah,
         )
     end
+
+    @testset "Dissipative system with max_trajectory_value" begin
+        # Damped Duffing oscillator - dissipative system where backward integration diverges
+        function damped_duffing!(du, u, p, t)
+            x, y = u
+            γ = p  # damping coefficient
+            du[1] = y
+            du[2] = x - x^3 - γ * y
+        end
+
+        γ = 0.3  # damping
+        tspan = (0.0, 100.0)
+        prob = ODEProblem(damped_duffing!, [0.5, 0.5], tspan, γ)
+
+        uu0 = [[x, y] for y in range(-2, 2, 5), x in range(-2, 2, 5)]
+        M = (du, u, p, t) -> norm(du)
+        lagprob = LagrangianDescriptorProblem(prob, M, uu0; direction=:both)
+
+        # Solve with termination threshold
+        lagsol = @test_nowarn solve(lagprob, Tsit5(); max_trajectory_value=1e3)
+
+        # Check that terminated field exists and is a BitVector
+        @test lagsol.terminated isa BitVector
+        @test length(lagsol.terminated) == length(uu0)
+
+        # Check that we can still extract LD values
+        ld_total = @test_nowarn lagsol(:total)
+        ld_fwd = @test_nowarn lagsol(:forward)
+        ld_bwd = @test_nowarn lagsol(:backward)
+
+        @test length(ld_total) == length(uu0)
+        @test all(isfinite, ld_fwd)  # Forward should be finite (dissipative attracts)
+
+        # Some trajectories should have terminated (backward diverges for dissipative systems)
+        @test any(lagsol.terminated)
+
+        # Test without max_trajectory_value (default Inf) - terminated should all be false.
+        # Only integrate forward in time, where the dissipative system stays bounded;
+        # backward trajectories would blow up and run until the solver's maxiters.
+        lagprob_fwd = LagrangianDescriptorProblem(prob, M, uu0; direction=:forward)
+        lagsol_no_term = @test_nowarn solve(lagprob_fwd, Tsit5())
+        @test lagsol_no_term.terminated isa BitVector
+        @test !any(lagsol_no_term.terminated)
+    end
 end

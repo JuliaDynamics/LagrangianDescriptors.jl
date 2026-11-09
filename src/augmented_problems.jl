@@ -8,6 +8,8 @@ Create an augmented `ODEProblem` by aggregating the forward and backward Lagrang
 
 More precisely, with given `f = prob.f`, `u0 = prob.u0`, and `tspan = prob.tspan`, an augmented `ODEProblem` is created that solves the forward and backward ODE and the forward and backward Lagrangian descriptors simultaneously.
 
+With `tspan = (t0, tf)`, the forward problem is solved over `[t0, tf]` and the backward problem over `[2t0 - tf, t0]`, both starting from `u0` at time `t0`. The backward problem is integrated via the change of variables `t ↦ 2t0 - t`, so that both run along the same time interval `tspan`.
+
 The (global) Lagrangian descriptors are based on the provided local descriptor `M=M(du, u, p, t)`. The (forward/backward) Lagrangian descriptor is the time-integration of the local descriptor along the (forward/backward) trajectory.
 
 If `direction=:forward` or `direction=:backward` are given, then only the forward or backard problem is constructed in the augmented system. The default is `direction=:both`, where both directions are considered.
@@ -18,19 +20,19 @@ function augmentprob(prob::ODEProblem, M; direction::Symbol = :both)
             faug = function (du, u, p, t)
                 fwd, bwd = u.fwd, u.bwd
                 prob.f(du.fwd, fwd, p, t)
-                prob.f(du.bwd, bwd, p, 2last(prob.tspan) - t)
+                prob.f(du.bwd, bwd, p, 2first(prob.tspan) - t)
                 du.bwd *= -1
                 du.lfwd = M(du.fwd, fwd, p, t)
-                du.lbwd = M(du.bwd, bwd, p, 2last(prob.tspan) - t)
+                du.lbwd = M(du.bwd, bwd, p, 2first(prob.tspan) - t)
                 nothing
             end
         else
             faug = function (du, u, p, t)
                 fwd, bwd = u.fwd, u.bwd
                 du.fwd = prob.f(fwd, p, t)
-                du.bwd = -prob.f(bwd, p, 2last(prob.tspan) - t)
+                du.bwd = -prob.f(bwd, p, 2first(prob.tspan) - t)
                 du.lfwd = M(du.fwd, fwd, p, t)
-                du.lbwd = M(du.bwd, bwd, p, 2last(prob.tspan) - t)
+                du.lbwd = M(du.bwd, bwd, p, 2first(prob.tspan) - t)
                 nothing
             end
         end
@@ -63,16 +65,16 @@ function augmentprob(prob::ODEProblem, M; direction::Symbol = :both)
         if isinplace(prob.f)
             faug = function (du, u, p, t)
                 bwd = u.bwd
-                prob.f(du.bwd, bwd, p, 2last(prob.tspan) - t)
+                prob.f(du.bwd, bwd, p, 2first(prob.tspan) - t)
                 du.bwd *= -1
-                du.lbwd = M(du.bwd, bwd, p, 2last(prob.tspan) - t)
+                du.lbwd = M(du.bwd, bwd, p, 2first(prob.tspan) - t)
                 nothing
             end
         else
             faug = function (du, u, p, t)
                 bwd = u.bwd
-                du.bwd = -prob.f(bwd, p, 2last(prob.tspan) - t)
-                du.lbwd = M(du.bwd, bwd, p, 2last(prob.tspan) - t)
+                du.bwd = -prob.f(bwd, p, 2first(prob.tspan) - t)
+                du.lbwd = M(du.bwd, bwd, p, 2first(prob.tspan) - t)
                 nothing
             end
         end
@@ -96,6 +98,8 @@ Create an augmented `RODEProblem` by aggregating the forward and backward Lagran
 
 More precisely, with given `f = prob.f`, `u0 = prob.u0`, `W = prob.noise`, and `tspan = prob.tspan`, an augmented `RODEProblem` is created that solves the forward and backward RODE and the forward and backward Lagrangian descriptors simultaneously.
 
+With `tspan = (t0, tf)`, the forward problem is solved over `[t0, tf]` and the backward problem over `[2t0 - tf, t0]`, both starting from `u0` at time `t0`. The backward problem is integrated via the change of variables `t ↦ 2t0 - t`, so that both run along the same time interval `tspan`. Note that the noise `W` is evaluated at the forward time `t` in both directions.
+
 The (global) Lagrangian descriptors are based on the provided local descriptor `M=M(du, u, p, t, W)`. The (forward/backward) Lagrangian descriptor is the time-integration of the local descriptor along the (forward/backward) trajectory.
 
 If `direction=:forward` or `direction=:backward` are given, then only the forward or backard problem is constructed in the augmented system. The default is `direction=:both`, where both directions are considered.
@@ -106,19 +110,19 @@ function augmentprob(prob::RODEProblem, M; direction::Symbol = :both)
             faug = function (du, u, p, t, W)
                 fwd, bwd = u.fwd, u.bwd
                 prob.f(du.fwd, fwd, p, t, W)
-                prob.f(du.bwd, bwd, p, 2last(prob.tspan) - t, W)
+                prob.f(du.bwd, bwd, p, 2first(prob.tspan) - t, W)
                 du.bwd *= -1
                 du.lfwd = M(du.fwd, fwd, p, t, W)
-                du.lbwd = M(du.bwd, bwd, p, 2last(prob.tspan) - t, W)
+                du.lbwd = M(du.bwd, bwd, p, 2first(prob.tspan) - t, W)
                 nothing
             end
         else
             faug = function (du, u, p, t, W)
                 fwd, bwd = u.fwd, u.bwd
                 du.fwd = prob.f(fwd, p, t, W)
-                du.bwd = -prob.f(bwd, p, 2last(prob.tspan) - t, W)
+                du.bwd = -prob.f(bwd, p, 2first(prob.tspan) - t, W)
                 du.lfwd = M(du.fwd, fwd, p, t, W)
-                du.lbwd = M(du.bwd, bwd, p, 2last(prob.tspan) - t, W)
+                du.lbwd = M(du.bwd, bwd, p, 2first(prob.tspan) - t, W)
                 nothing
             end
         end
@@ -151,16 +155,16 @@ function augmentprob(prob::RODEProblem, M; direction::Symbol = :both)
         if isinplace(prob.f)
             faug = function (du, u, p, t, W)
                 bwd = u.bwd
-                prob.f(du.bwd, bwd, p, 2last(prob.tspan) - t, W)
+                prob.f(du.bwd, bwd, p, 2first(prob.tspan) - t, W)
                 du.bwd *= -1
-                du.lbwd = M(du.bwd, bwd, p, 2last(prob.tspan) - t, W)
+                du.lbwd = M(du.bwd, bwd, p, 2first(prob.tspan) - t, W)
                 nothing
             end
         else
             faug = function (du, u, p, t, W)
                 bwd = u.bwd
-                du.bwd = -prob.f(bwd, p, 2last(prob.tspan) - t, W)
-                du.lbwd = M(du.bwd, bwd, p, 2last(prob.tspan) - t, W)
+                du.bwd = -prob.f(bwd, p, 2first(prob.tspan) - t, W)
+                du.lbwd = M(du.bwd, bwd, p, 2first(prob.tspan) - t, W)
                 nothing
             end
         end

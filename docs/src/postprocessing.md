@@ -59,7 +59,7 @@ u0 = 0.1 .+ 0.7rand(n)
 tspanfwd = (t0, tf)
 probfwd = ODEProblem(f!, u0, tspanfwd)
 
-tspanbwd = (tf, t0)
+tspanbwd = (t0, 2t0 - tf)
 probbwd = remake(probfwd, tspan = tspanbwd)
 
 solfwd = solve(probfwd, Tsit5())

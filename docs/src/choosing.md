@@ -98,7 +98,9 @@ For a non-autonomous system, the descriptors are those at the initial time ``t_0
 
 ## Diverging solutions
 
-For some systems, such as dissipative systems backward in time, or systems in which solutions can escape to infinity, some solutions grow very large within the time window. Their descriptors then dominate the color scale, and the solver may take many small steps or fail. The keyword `max_trajectory_value` of [`solve`](@ref LagrangianDescriptors.solve) stops each solution once one of its components exceeds the given value, keeping the descriptor accumulated up to then:
+For some systems, such as dissipative systems backward in time, or systems in which solutions can escape to infinity, some solutions grow very large within the time window. Their descriptors then dominate the color scale, and the solver may take many small steps or fail. The keyword `max_trajectory_value` of [`solve`](@ref LagrangianDescriptors.solve) stops each solution once one of its components exceeds the given value, keeping the descriptor accumulated up to then.
+
+When a problem has both directions, the forward and backward solutions are computed together, so stopping a solution that diverges backward also stops its forward part, and its forward descriptor is then incomplete. If the solutions only diverge in one direction, it is better to solve each direction separately, and to only stop the diverging one. With damping, for instance, the solutions decay forward in time, but grow backward in time:
 
 ```@example choosing
 function damped_duffing!(du, u, p, t)
@@ -106,22 +108,29 @@ function damped_duffing!(du, u, p, t)
     du[2] = u[1] - u[1]^3 - 0.3u[2]
 end
 
-# with damping, solutions decay forward in time, but grow backward in time
 prob_damped = ODEProblem(damped_duffing!, [0.0, 0.0], (0.0, 8.0))
-lagsol_damped = solve(LagrangianDescriptorProblem(prob_damped, M, uu0), Tsit5(); max_trajectory_value = 10.0)
-plot(lagsol_damped, title = "damped Duffing equation", titlefont = 10, xlabel = "x", ylabel = "y")
+lagsol_fwd = solve(LagrangianDescriptorProblem(prob_damped, M, uu0; direction = :forward), Tsit5())
+lagsol_bwd = solve(LagrangianDescriptorProblem(prob_damped, M, uu0; direction = :backward), Tsit5();
+    max_trajectory_value = 10.0)
+
+plot(
+    plot(lagsol_fwd, title = "forward"),
+    plot(lagsol_bwd, title = "backward"),
+    layout = (1, 2), size = (900, 360), margin = 4Plots.mm, titlefont = 10, colorbar = false,
+    xlabel = "x", ylabel = "y",
+)
 savefig("damped.png"); nothing # hide
 ```
 
-![Lagrangian descriptors of the damped Duffing equation, with diverging solutions stopped](damped.png)
+![Forward and backward Lagrangian descriptors of the damped Duffing equation, with diverging solutions stopped](damped.png)
 
-The number of solutions stopped early is
+The number of backward solutions stopped early is
 
 ```@example choosing
-count(lagsol_damped.terminated)
+count(lagsol_bwd.terminated)
 ```
 
-More generally, the return codes in `lagsol.retcodes` tell which solutions did not finish normally, e.g. because they reached the maximum number of steps; their descriptors are not reliable. See [GarciaGarridoGarciaLuengo2022](@citet) for more on dissipative systems.
+Their descriptors only measure how fast they diverge, so it may be clearer to leave them out of the picture, as in the [van der Pol](examples/vanderpol.md) example. More generally, the return codes in `lagsol.retcodes` tell which solutions did not finish normally, e.g. because they reached the maximum number of steps; their descriptors are not reliable. See [GarciaGarridoGarciaLuengo2022](@citet) for more on dissipative systems.
 
 ## The grid of initial conditions
 

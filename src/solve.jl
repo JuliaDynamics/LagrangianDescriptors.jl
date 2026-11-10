@@ -18,7 +18,11 @@ number of trajectories is set from `prob.uu0` and `realizations`.
   absolute value of any component of its forward or backward solution exceeds it. This is
   useful for systems whose solutions diverge, e.g. dissipative systems backward in time.
   The Lagrangian descriptors accumulated up to that time are kept, and the trajectory is
-  marked in the field `terminated` of the solution.
+  marked in the field `terminated` of the solution. For a problem with both directions, the
+  forward and backward solutions are computed together, so a trajectory is stopped as soon
+  as either of them exceeds the value, and then both descriptors are incomplete. If the
+  solutions only diverge in one direction, solve each direction separately, and only use
+  `max_trajectory_value` for the diverging one.
 - `realizations::Integer = 1`: the number of times each initial condition is solved. For
   random or stochastic equations, each realization has independent noise, and the solution
   gives the mean of the Lagrangian descriptors over the realizations, as in Balibrea-Iniesta,

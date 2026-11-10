@@ -13,6 +13,16 @@ makedocs(
             "RODEs" => "tutorial_RODEs.md",
             "Alternative via post-processing" => "postprocessing.md"
         ]
+        "Examples" => [
+            "Overview" => "examples/index.md",
+            "Saddle point" => "examples/saddle.md",
+            "Pendulum" => "examples/pendulum.md",
+            "Van der Pol oscillator" => "examples/vanderpol.md",
+            "Double gyre" => "examples/doublegyre.md",
+            "Lorenz system" => "examples/lorenz.md",
+            "Double pendulum" => "examples/doublependulum.md",
+            "Stochastic Duffing equation" => "examples/stochastic_duffing.md",
+        ]
         "API" => "api.md"
         "References" => "references.md"
     ],

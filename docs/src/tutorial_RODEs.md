@@ -12,7 +12,7 @@ We consider, first, the random Duffing equation
 
 where ``\{W_t\}_t`` is a standard Wiener process.
 
-With `LagrangianDescriptors.jl`, we i) start by setting up the equation as a `RODEProblem`; next, we ii) wrap that as a `LagrangianDescriptorProblem`; then we iii) `solve` it; and finally, we iv) plot the result with the built-in plot recipe. Since the noise path is given in the problem, the same path is used for all initial conditions.
+With `LagrangianDescriptors.jl`, we i) start by setting up the equation as a `RODEProblem`; next, we ii) wrap that as a `LagrangianDescriptorProblem`; then we iii) `solve` it; and finally, we iv) plot the result with the built-in plot recipe. Each initial condition is solved with its own realization of the noise.
 
 So we first load the relevant packages:
 

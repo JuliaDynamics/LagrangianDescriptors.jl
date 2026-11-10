@@ -65,4 +65,5 @@ And here is a painting of a *random* Duffing oscillator, detailed in the Tutoria
 * [Lagrangian descriptors: A method for revealing phase space structures of general time dependent dynamical systems](https://www.sciencedirect.com/science/article/abs/pii/S1007570413002037)
 * [Lagrangian Descriptors - *Discovery and Quantification of Phase Space Structure and Transport*](https://champsproject.github.io/lagrangian_descriptors/docs/authors.html)
 * [Frequently Asked Questions about Lagrangian Descriptors](https://acp.copernicus.org/preprints/acp-2016-633/acp-2016-633-SC2-supplement.pdf)
+* [Lagrangian Descriptors for Stochastic Differential Equations: A Tool for Revealing the Phase Portrait of Stochastic Dynamical Systems](https://doi.org/10.1142/S0218127416300366) (also on [arXiv:1705.11074](https://arxiv.org/abs/1705.11074))
 

@@ -34,13 +34,15 @@ end
 """
     lagrangian_descriptor(sol::RODESolution, M)
 
-Computes the Lagrangian descriptor of a single trajectory of a `RODEProblem`.
+Computes the Lagrangian descriptor of a single trajectory of a `RODEProblem` or of an `SDEProblem` (whose solutions are also `RODESolution`s).
 
 It takes the provided infinitesimal Lagrangian descriptor in the form `M=M(du, u, p, t, W)`, along with the time interval given in `sol.prob.tspan`, to compute
 ```math
 L = \\int_{t_0}^{t_f} M(du(t), u(t), p, t, W(t)) \\;\\mathrm{d}t,
 ```
 where ``t_0`` and ``t_f`` are the initial and final times in `sol.prob.tspan`, `u(t) = sol(t)`, `p = sol.prob.p`, `W(t) = first(sol.W(t))`, and `du(t)` is either `du = sol.prob.f(sol(t), sol.prob.p, t, first(sol.W(t)))` or given by `sol.prob.f(du, sol(t), sol.prob.p, t, first(sol.W(t)))`, depending on whether `sol.prob` is in place or out of place.
+
+For an `SDEProblem`, the infinitesimal Lagrangian descriptor has the form `M=M(du, u, p, t)`, where `du` is the drift `sol.prob.f` along the solution, without the noise argument, as in [`augmentprob`](@ref) for `SDEProblem`s.
 
 `QuadGK.quadgk` is an adaptive integration method and does not perform well on solutions of random or stochastic equations, so the integration, in these case, is performed via a simple trapezoidal rule on the mesh given by `sol.t`, which may be far com accurate depending on the mesh.
 """
@@ -54,15 +56,24 @@ function lagrangian_descriptor(sol::RODESolution, M)
     for i in eachindex(sol.t)
         ti = sol.t[i]
         dt = ti - ti1
-        if isinplace(sol.prob)
-            sol.prob.f(du, sol.u[i], sol.prob.p, ti, sol.W.W[i])
-        else
-            du = sol.prob.f(sol.u[i], sol.prob.p, ti, sol.W.W[i])
-        end
-        mi = M(du, sol.u[i], sol.prob.p, ti, sol.W.W[i])
+        mi = _local_descriptor(sol, M, du, i)
         res += (mi + mi1) * dt / 2
         ti1 = ti
         mi1 = mi
     end
     return (tf ≥ t0 ? 1 : -1) * res
+end
+
+# Infinitesimal Lagrangian descriptor at the `i`-th time of a RODE or SDE solution: for a
+# RODE, `f` and `M` also take the noise; for an SDE, `f` is the drift and takes no noise.
+function _local_descriptor(sol, M, du, i)
+    prob = sol.prob
+    u, t = sol.u[i], sol.t[i]
+    args = prob isa SDEProblem ? () : (sol.W.W[i],)
+    if isinplace(prob)
+        prob.f(du, u, prob.p, t, args...)
+    else
+        du = prob.f(u, prob.p, t, args...)
+    end
+    return M(du, u, prob.p, t, args...)
 end

@@ -20,12 +20,12 @@ Defines a Lagrangian descriptor problem associated with a SciML differential equ
 
     LagrangianDescriptorProblem(prob, M, uu0; direction=:both)
 
-`LagrangianDescriptorProblem` can be constructed by passing a differential equation problem (currently only `ODEProblem`, but more problem types will be added), an infinitesimal Lagrangian descriptor with arguments compatible with the differential equation problem, an array of initial conditions, and, optionally, the direction of the flow.
+`LagrangianDescriptorProblem` can be constructed by passing a differential equation problem (currently `ODEProblem`, `RODEProblem`, or `SDEProblem`), an infinitesimal Lagrangian descriptor with arguments compatible with the differential equation problem, an array of initial conditions, and, optionally, the direction of the flow.
 
 ### Arguments
 
 - `prob`: the differential equation problem (e.g. `ODEProblem`, `SDEProblem`, `RODEProblem`, etc.).
-- `M`: infinitesimal Lagrangian descriptor (e.g. `M=M(du, u, t, p)` for an ODEProblem).
+- `M`: infinitesimal Lagrangian descriptor (e.g. `M=M(du, u, p, t)` for an `ODEProblem` or an `SDEProblem`, where `du` is the drift for the latter, and `M=M(du, u, p, t, W)` for a `RODEProblem`).
 - `uu0`: collection of initial conditions.
 - `direction`: the direction of the flow, with default `:both`, but also accepting `:forward` and `:backward`.
 

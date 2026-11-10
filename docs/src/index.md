@@ -119,14 +119,14 @@ More precisely, the implementation works as follows:
 
 ## Current state
 
-The package is still in an embrionary phase and currently accepts differential equations of the type `ODEProblem` and `RODEProblem`. Problems of the type `SDEProblem` will be implemented soon. Other problems will come eventually.
+The package is still in an embrionary phase and currently accepts differential equations of the type `ODEProblem`, `RODEProblem`, and `SDEProblem`. Other problems will come eventually.
 
 The plot recipe works for some types of collections of initial conditions (e.g. a `AbstractVector{<:Number}`, for scalar problems, and `AbstractMatrix{<:AbstractVector{<:Number}}` with the `AbstractVector` of length two, for two-dimensional problems). More general and flexible plot recipes will also be implemented.
 
 ## Roadmap
 
 What is currently missing:
-1. Support for other types of problems, such as `SDEProblem`, mixed differential-algebraic equations, etc.;
+1. Support for other types of problems, such as mixed differential-algebraic equations, etc.;
 1. A more flexible plot recipe;
 1. Improve the documentation with more examples;
 1. Maybe an adaptive method to refine the set `uu0` of initial conditions!;
@@ -139,6 +139,7 @@ What is currently missing:
 * [Lagrangian descriptors: A method for revealing phase space structures of general time dependent dynamical systems](https://www.sciencedirect.com/science/article/abs/pii/S1007570413002037)
 * [Lagrangian Descriptors - *Discovery and Quantification of Phase Space Structure and Transport*](https://champsproject.github.io/lagrangian_descriptors/docs/authors.html)
 * [Frequently Asked Questions about Lagrangian Descriptors](https://acp.copernicus.org/preprints/acp-2016-633/acp-2016-633-SC2-supplement.pdf)
+* [Lagrangian Descriptors for Stochastic Differential Equations: A Tool for Revealing the Phase Portrait of Stochastic Dynamical Systems](https://doi.org/10.1142/S0218127416300366) (also on [arXiv:1705.11074](https://arxiv.org/abs/1705.11074))
 
 ## Developers
 

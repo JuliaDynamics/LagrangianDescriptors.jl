@@ -128,3 +128,118 @@ function augmentprob(prob::RODEProblem, M; direction::Symbol = :both)
     uaug0 = _augmented_u0(prob.u0, direction)
     return RODEProblem{true}(faug, uaug0, prob.tspan, prob.p; noise_kwargs..., prob.kwargs...)
 end
+
+# Diffusion of an augmented SDE problem, built from the diffusion `g` of the original problem.
+# The `fwd` and `bwd` blocks get the diffusion of the original problem, the latter at the
+# reversed time `2t0 - t`, and the Lagrangian descriptors `lfwd` and `lbwd` get no noise.
+# With diagonal noise (`DIAG`), each component of the augmented state is driven by its own
+# Wiener process, so the backward path gets noise independent from the forward one. With
+# non-diagonal noise, the original `n × m` noise matrix goes into the block of rows of
+# `fwd` and the first `m` columns, and into the block of rows of `bwd` and the next `m`
+# columns, so the backward path again gets its own `m` independent noise channels.
+struct AugmentedDiffusion{IIP,FWD,BWD,DIAG,G,T,R}
+    g::G
+    t0::T
+    rows::R # for non-diagonal noise: (fwd rows, bwd rows, fwd columns, bwd columns)
+end
+
+AugmentedDiffusion{IIP,FWD,BWD,DIAG}(g::G, t0::T, rows::R) where {IIP,FWD,BWD,DIAG,G,T,R} =
+    AugmentedDiffusion{IIP,FWD,BWD,DIAG,G,T,R}(g, t0, rows)
+
+function (diff::AugmentedDiffusion{IIP,FWD,BWD,true})(du, u, p, t) where {IIP,FWD,BWD}
+    if FWD
+        if IIP
+            diff.g(du.fwd, u.fwd, p, t)
+        else
+            du.fwd = diff.g(u.fwd, p, t)
+        end
+        du.lfwd = zero(eltype(du))
+    end
+    if BWD
+        tb = 2diff.t0 - t
+        if IIP
+            diff.g(du.bwd, u.bwd, p, tb)
+        else
+            du.bwd = diff.g(u.bwd, p, tb)
+        end
+        du.lbwd = zero(eltype(du))
+    end
+    return nothing
+end
+
+function (diff::AugmentedDiffusion{IIP,FWD,BWD,false})(dG, u, p, t) where {IIP,FWD,BWD}
+    # only the two diagonal blocks are written; the other entries of `dG` stay zero
+    rfwd, rbwd, cfwd, cbwd = diff.rows
+    if FWD
+        if IIP
+            diff.g(view(dG, rfwd, cfwd), u.fwd, p, t)
+        else
+            dG[rfwd, cfwd] .= diff.g(u.fwd, p, t)
+        end
+    end
+    if BWD
+        tb = 2diff.t0 - t
+        if IIP
+            diff.g(view(dG, rbwd, cbwd), u.bwd, p, tb)
+        else
+            dG[rbwd, cbwd] .= diff.g(u.bwd, p, tb)
+        end
+    end
+    return nothing
+end
+
+"""
+    augmentprob(prob::SDEProblem, M; direction::Symbol=:both)
+
+Create an augmented `SDEProblem` by aggregating the forward and backward Lagrangian descriptors to the given `SDEProblem`.
+
+More precisely, with given drift `f = prob.f`, diffusion `g = prob.g`, `u0 = prob.u0`, and `tspan = prob.tspan`, an augmented `SDEProblem` is created that solves the forward and backward SDE and the forward and backward Lagrangian descriptors simultaneously.
+
+With `tspan = (t0, tf)`, the forward problem is solved over `[t0, tf]` and the backward problem over `[2t0 - tf, t0]`, both starting from `u0` at time `t0`. The backward problem is integrated via the change of variables `t ↦ 2t0 - t`, so that both run along the same time interval `tspan`: its drift is `-f` and its diffusion is `g`, both evaluated at the time `2t0 - t`.
+
+The noise driving the backward problem is independent of the noise driving the forward problem, as for a two-sided Wiener process, whose increments over `[2t0 - tf, t0]` and over `[t0, tf]` are independent. With diagonal noise, each component of the augmented system has its own Wiener process. With non-diagonal noise, given by an `n × m` `noise_rate_prototype`, the augmented noise matrix has the diffusion of the forward problem and that of the backward problem in separate columns, so each has its own `m` noise channels.
+
+The (global) Lagrangian descriptors are based on the provided local descriptor `M=M(du, u, p, t)`, where `du` is the drift `f(u, p, t)`. The (forward/backward) Lagrangian descriptor is the time-integration of the local descriptor along the (forward/backward) stochastic trajectory.
+
+If `direction=:forward` or `direction=:backward` are given, then only the forward or backard problem is constructed in the augmented system. The default is `direction=:both`, where both directions are considered.
+
+Custom noise processes (the `noise` keyword of `SDEProblem`) are not supported, since the augmented system needs noise with a different dimension.
+"""
+function augmentprob(prob::SDEProblem, M; direction::Symbol = :both)
+    prob.noise === nothing || throw(
+        ArgumentError(
+            "Custom noise processes are not supported for `SDEProblem`s: the augmented " *
+            "problem needs noise with a different dimension. Use the default white noise.",
+        ),
+    )
+    t0 = first(prob.tspan)
+    iip = isinplace(prob)
+    faug = AugmentedRHS(prob.f, M, t0, iip, direction)
+    uaug0 = _augmented_u0(prob.u0, direction)
+    fwd = direction in (:both, :forward)
+    bwd = direction in (:both, :backward)
+
+    if prob.noise_rate_prototype === nothing
+        gaug = AugmentedDiffusion{iip,fwd,bwd,true}(prob.g, t0, nothing)
+        noise_kwargs = (;)
+    else
+        prob.u0 isa AbstractVector || throw(
+            ArgumentError("Non-diagonal noise requires the initial condition to be a vector."),
+        )
+        n, m = size(prob.noise_rate_prototype)
+        # `_augmented_u0` lays out the blocks in the order fwd, bwd, lfwd, lbwd
+        rfwd = fwd ? (1:n) : (1:0)
+        rbwd = bwd ? (fwd ? (n+1:2n) : (1:n)) : (1:0)
+        cfwd = fwd ? (1:m) : (1:0)
+        cbwd = bwd ? (fwd ? (m+1:2m) : (1:m)) : (1:0)
+        nblocks = fwd + bwd
+        prototype = zeros(eltype(prob.noise_rate_prototype), length(uaug0), nblocks * m)
+        gaug = AugmentedDiffusion{iip,fwd,bwd,false}(prob.g, t0, (rfwd, rbwd, cfwd, cbwd))
+        noise_kwargs = (; noise_rate_prototype = prototype)
+    end
+
+    return SDEProblem{true}(
+        faug, gaug, uaug0, prob.tspan, prob.p;
+        noise_kwargs..., seed = prob.seed, prob.kwargs...,
+    )
+end

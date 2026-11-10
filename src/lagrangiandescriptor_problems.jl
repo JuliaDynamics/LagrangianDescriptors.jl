@@ -3,6 +3,13 @@
 _trajectory_index(i::Integer, repeat) = i
 _trajectory_index(ctx) = ctx.sim_id
 
+# Lagrangian descriptors at the end of a trajectory, kept as the output of each trajectory
+function _descriptors(u, direction::Symbol, terminated::Bool)
+    direction == :both && return ComponentArray(lfwd = u.lfwd, lbwd = u.lbwd, terminated = terminated)
+    direction == :forward && return ComponentArray(lfwd = u.lfwd, terminated = terminated)
+    return ComponentArray(lbwd = u.lbwd, terminated = terminated)
+end
+
 """
     LagrangianDescriptorProblem
 
@@ -68,47 +75,13 @@ struct LagrangianDescriptorProblem{T1,T2,T3}
     direction::T3
 
     function LagrangianDescriptorProblem(prob, M, uu0; direction::Symbol = :both)
-        if direction == :both
-            prob_func = function (augprob, args...; uu0 = uu0)
-                i = _trajectory_index(args...)
-                remake(
-                    augprob,
-                    u0 = ComponentVector(
-                        fwd = uu0[i],
-                        bwd = uu0[i],
-                        lfwd = 0.0,
-                        lbwd = 0.0,
-                    ),
-                )
-            end
-            output_func = function (sol, i)
-                terminated = sol.retcode == SciMLBase.ReturnCode.Terminated
-                (ComponentArray(lfwd = sol.u[end].lfwd, lbwd = sol.u[end].lbwd, terminated = terminated), false)
-            end
-        elseif direction == :forward
-            prob_func = function (augprob, args...; uu0 = uu0)
-                i = _trajectory_index(args...)
-                remake(augprob, u0 = ComponentVector(fwd = uu0[i], lfwd = 0.0))
-            end
-            output_func = function (sol, i)
-                terminated = sol.retcode == SciMLBase.ReturnCode.Terminated
-                (ComponentArray(lfwd = sol.u[end].lfwd, terminated = terminated), false)
-            end
-        elseif direction == :backward
-            prob_func = function (augprob, args...; uu0 = uu0)
-                i = _trajectory_index(args...)
-                remake(augprob, u0 = ComponentVector(bwd = uu0[i], lbwd = 0.0))
-            end
-            output_func = function (sol, i)
-                terminated = sol.retcode == SciMLBase.ReturnCode.Terminated
-                (ComponentArray(lbwd = sol.u[end].lbwd, terminated = terminated), false)
-            end
-        else
-            throw(
-                ArgumentError(
-                    "Keyword argument `direction = $direction` not implemented; use either `:forward`, `:backward` or `:both`",
-                ),
-            )
+        _check_direction(direction)
+        prob_func = function (augprob, args...)
+            i = _trajectory_index(args...)
+            remake(augprob, u0 = _augmented_u0(uu0[i], direction))
+        end
+        output_func = function (sol, i)
+            (_descriptors(sol.u[end], direction, sol.retcode == SciMLBase.ReturnCode.Terminated), false)
         end
 
         augprob = augmentprob(prob, M; direction)

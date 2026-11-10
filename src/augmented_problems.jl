@@ -1,5 +1,72 @@
 # This file is for `augmentprob` of all types.
-# Currently it is only implemented for `ODEProblem`.
+# Currently it is implemented for `ODEProblem` and `RODEProblem`.
+
+const FLOW_DIRECTIONS = (:both, :forward, :backward)
+
+function _check_direction(direction::Symbol, allowed = FLOW_DIRECTIONS)
+    direction in allowed || throw(
+        ArgumentError(
+            "Direction `$direction` not implemented; use one of " *
+            join(("`:$d`" for d in allowed), ", ", " or "),
+        ),
+    )
+    return direction
+end
+
+# Right-hand side of an augmented problem, built from the right-hand side `f` and the
+# infinitesimal Lagrangian descriptor `m` of the original problem. It computes the forward
+# part (`FWD`) and/or the backward part (`BWD`) of the augmented system, calling `f` in place
+# or out of place according to `IIP`. These are type parameters, so the unused branches are
+# compiled away. The backward part is integrated via the change of variables `t ↦ 2t0 - t`.
+# Any extra arguments after `t` (e.g. the noise `W` of a `RODEProblem`) are passed on to
+# `f` and `m`.
+struct AugmentedRHS{IIP,FWD,BWD,F,M,T}
+    f::F
+    m::M
+    t0::T
+end
+
+AugmentedRHS{IIP,FWD,BWD}(f::F, m::M, t0::T) where {IIP,FWD,BWD,F,M,T} =
+    AugmentedRHS{IIP,FWD,BWD,F,M,T}(f, m, t0)
+
+function AugmentedRHS(f, m, t0, iip::Bool, direction::Symbol)
+    _check_direction(direction)
+    fwd = direction in (:both, :forward)
+    bwd = direction in (:both, :backward)
+    return AugmentedRHS{iip,fwd,bwd}(f, m, t0)
+end
+
+function (rhs::AugmentedRHS{IIP,FWD,BWD})(du, u, p, t, args...) where {IIP,FWD,BWD}
+    if FWD
+        if IIP
+            rhs.f(du.fwd, u.fwd, p, t, args...)
+        else
+            du.fwd = rhs.f(u.fwd, p, t, args...)
+        end
+        du.lfwd = rhs.m(du.fwd, u.fwd, p, t, args...)
+    end
+    if BWD
+        tb = 2rhs.t0 - t
+        if IIP
+            dbwd = du.bwd # a view; `du.bwd .*= -1` would not infer with ComponentArrays
+            rhs.f(dbwd, u.bwd, p, tb, args...)
+            dbwd .*= -1
+        else
+            du.bwd = -rhs.f(u.bwd, p, tb, args...)
+        end
+        du.lbwd = rhs.m(du.bwd, u.bwd, p, tb, args...)
+    end
+    return nothing
+end
+
+# Initial condition of the augmented system, for the initial condition `u0` of the original one.
+function _augmented_u0(u0, direction::Symbol)
+    l0 = zero(eltype(u0))
+    direction == :both && return ComponentVector(fwd = u0, bwd = u0, lfwd = l0, lbwd = l0)
+    direction == :forward && return ComponentVector(fwd = u0, lfwd = l0)
+    direction == :backward && return ComponentVector(bwd = u0, lbwd = l0)
+    _check_direction(direction)
+end
 
 """
     augmentprob(prob::ODEProblem, M; direction::Symbol=:both)
@@ -15,80 +82,9 @@ The (global) Lagrangian descriptors are based on the provided local descriptor `
 If `direction=:forward` or `direction=:backward` are given, then only the forward or backard problem is constructed in the augmented system. The default is `direction=:both`, where both directions are considered.
 """
 function augmentprob(prob::ODEProblem, M; direction::Symbol = :both)
-    if direction == :both
-        if isinplace(prob.f)
-            faug = function (du, u, p, t)
-                fwd, bwd = u.fwd, u.bwd
-                prob.f(du.fwd, fwd, p, t)
-                prob.f(du.bwd, bwd, p, 2first(prob.tspan) - t)
-                du.bwd *= -1
-                du.lfwd = M(du.fwd, fwd, p, t)
-                du.lbwd = M(du.bwd, bwd, p, 2first(prob.tspan) - t)
-                nothing
-            end
-        else
-            faug = function (du, u, p, t)
-                fwd, bwd = u.fwd, u.bwd
-                du.fwd = prob.f(fwd, p, t)
-                du.bwd = -prob.f(bwd, p, 2first(prob.tspan) - t)
-                du.lfwd = M(du.fwd, fwd, p, t)
-                du.lbwd = M(du.bwd, bwd, p, 2first(prob.tspan) - t)
-                nothing
-            end
-        end
-
-        uaug0 = ComponentVector(
-            fwd = prob.u0,
-            bwd = prob.u0,
-            lfwd = zero(eltype(prob.u0)),
-            lbwd = zero(eltype(prob.u0)),
-        )
-    elseif direction == :forward
-        if isinplace(prob.f)
-            faug = function (du, u, p, t)
-                fwd = u.fwd
-                prob.f(du.fwd, fwd, p, t)
-                du.lfwd = M(du.fwd, fwd, p, t)
-                nothing
-            end
-        else
-            faug = function (du, u, p, t)
-                fwd = u.fwd
-                du.fwd = prob.f(fwd, p, t)
-                du.lfwd = M(du.fwd, fwd, p, t)
-                nothing
-            end
-        end
-
-        uaug0 = ComponentVector(fwd = prob.u0, lfwd = zero(eltype(prob.u0)))
-    elseif direction == :backward
-        if isinplace(prob.f)
-            faug = function (du, u, p, t)
-                bwd = u.bwd
-                prob.f(du.bwd, bwd, p, 2first(prob.tspan) - t)
-                du.bwd *= -1
-                du.lbwd = M(du.bwd, bwd, p, 2first(prob.tspan) - t)
-                nothing
-            end
-        else
-            faug = function (du, u, p, t)
-                bwd = u.bwd
-                du.bwd = -prob.f(bwd, p, 2first(prob.tspan) - t)
-                du.lbwd = M(du.bwd, bwd, p, 2first(prob.tspan) - t)
-                nothing
-            end
-        end
-
-        uaug0 = ComponentVector(bwd = prob.u0, lbwd = zero(eltype(prob.u0)))
-    else
-        throw(
-            ArgumentError(
-                "Keyword argument `direction = $direction` not implemented; use either `:forward`, `:backward` or `:both`",
-            ),
-        )
-    end
-    augprob = ODEProblem(faug, uaug0, prob.tspan, prob.p; prob.kwargs...)
-    return augprob
+    faug = AugmentedRHS(prob.f, M, first(prob.tspan), isinplace(prob), direction)
+    uaug0 = _augmented_u0(prob.u0, direction)
+    return ODEProblem{true}(faug, uaug0, prob.tspan, prob.p; prob.kwargs...)
 end
 
 """
@@ -118,79 +114,6 @@ function augmentprob(prob::RODEProblem, M; direction::Symbol = :both)
     else
         prob.f, M
     end
-
-    if direction == :both
-        if isinplace(prob.f)
-            faug = function (du, u, p, t, W)
-                fwd, bwd = u.fwd, u.bwd
-                f(du.fwd, fwd, p, t, W)
-                f(du.bwd, bwd, p, 2first(prob.tspan) - t, W)
-                du.bwd *= -1
-                du.lfwd = m(du.fwd, fwd, p, t, W)
-                du.lbwd = m(du.bwd, bwd, p, 2first(prob.tspan) - t, W)
-                nothing
-            end
-        else
-            faug = function (du, u, p, t, W)
-                fwd, bwd = u.fwd, u.bwd
-                du.fwd = f(fwd, p, t, W)
-                du.bwd = -f(bwd, p, 2first(prob.tspan) - t, W)
-                du.lfwd = m(du.fwd, fwd, p, t, W)
-                du.lbwd = m(du.bwd, bwd, p, 2first(prob.tspan) - t, W)
-                nothing
-            end
-        end
-
-        uaug0 = ComponentVector(
-            fwd = prob.u0,
-            bwd = prob.u0,
-            lfwd = zero(eltype(prob.u0)),
-            lbwd = zero(eltype(prob.u0)),
-        )
-    elseif direction == :forward
-        if isinplace(prob.f)
-            faug = function (du, u, p, t, W)
-                fwd = u.fwd
-                f(du.fwd, fwd, p, t, W)
-                du.lfwd = m(du.fwd, fwd, p, t, W)
-                nothing
-            end
-        else
-            faug = function (du, u, p, t, W)
-                fwd = u.fwd
-                du.fwd = f(fwd, p, t, W)
-                du.lfwd = m(du.fwd, fwd, p, t, W)
-                nothing
-            end
-        end
-
-        uaug0 = ComponentVector(fwd = prob.u0, lfwd = zero(eltype(prob.u0)))
-    elseif direction == :backward
-        if isinplace(prob.f)
-            faug = function (du, u, p, t, W)
-                bwd = u.bwd
-                f(du.bwd, bwd, p, 2first(prob.tspan) - t, W)
-                du.bwd *= -1
-                du.lbwd = m(du.bwd, bwd, p, 2first(prob.tspan) - t, W)
-                nothing
-            end
-        else
-            faug = function (du, u, p, t, W)
-                bwd = u.bwd
-                du.bwd = -f(bwd, p, 2first(prob.tspan) - t, W)
-                du.lbwd = m(du.bwd, bwd, p, 2first(prob.tspan) - t, W)
-                nothing
-            end
-        end
-
-        uaug0 = ComponentVector(bwd = prob.u0, lbwd = zero(eltype(prob.u0)))
-    else
-        throw(
-            ArgumentError(
-                "Keyword argument `direction = $direction` not implemented; use either `:forward`, `:backward` or `:both`",
-            ),
-        )
-    end
     noise_kwargs = if prob.noise !== nothing
         (; noise = prob.noise)
     elseif prob.rand_prototype !== nothing
@@ -200,7 +123,8 @@ function augmentprob(prob::RODEProblem, M; direction::Symbol = :both)
     else
         (; rand_prototype = zero(prob.u0))
     end
-    augprob = RODEProblem(faug, uaug0, prob.tspan, prob.p; noise_kwargs..., prob.kwargs...)
 
-    return augprob
+    faug = AugmentedRHS(f, m, first(prob.tspan), isinplace(prob), direction)
+    uaug0 = _augmented_u0(prob.u0, direction)
+    return RODEProblem{true}(faug, uaug0, prob.tspan, prob.p; noise_kwargs..., prob.kwargs...)
 end

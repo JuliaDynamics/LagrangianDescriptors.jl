@@ -9,5 +9,13 @@
         return getindex.(lagsol.uu0[1, :], 1),
         getindex.(lagsol.uu0[:, 1], 2),
         reshape(lagsol(direction), size(lagsol.uu0))
+    else
+        throw(
+            ArgumentError(
+                "Plot recipe not implemented for this collection of initial conditions; " *
+                "use an `AbstractVector` of numbers (scalar problems) or an `AbstractMatrix` " *
+                "of two-element vectors (two-dimensional problems).",
+            ),
+        )
     end
 end

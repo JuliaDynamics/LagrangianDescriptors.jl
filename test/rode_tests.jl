@@ -144,7 +144,7 @@ end
         lagsol = @test_nowarn solve(lagprob, RandomHeun(), dt=1/100)
         @test_nowarn solve(lagprob, RandomHeun(), dt=1/100, EnsembleSerial())
 
-        @test lagsol() == lagsol(:total) == lagsol(:both) ≈ sum.(lagsol.enssol.u)
+        @test lagsol() == lagsol(:total) == lagsol(:both) ≈ getindex.(lagsol.enssol.u, :lfwd) + getindex.(lagsol.enssol.u, :lbwd)
         @test lagsol(:forward) ≈ getindex.(lagsol.enssol.u, :lfwd)
         @test lagsol(:backward) ≈ getindex.(lagsol.enssol.u, :lbwd)
         @test lagsol(:difference) ≈ lagsol(:forward) - lagsol(:backward)
@@ -156,7 +156,7 @@ end
         lagsol = @test_nowarn solve(lagprob, RandomHeun(), dt=1/100)
         @test_nowarn solve(lagprob, RandomHeun(), dt=1/100, EnsembleSerial())
 
-        @test lagsol() ≈ sum.(lagsol.enssol.u) ≈ lagsol(:forward)
+        @test lagsol() ≈ getindex.(lagsol.enssol.u, :lfwd) ≈ lagsol(:forward)
         @test lagsol(:forward) ≈ getindex.(lagsol.enssol.u, :lfwd)
 
         lagprob =
@@ -164,7 +164,7 @@ end
         lagsol = @test_nowarn solve(lagprob, RandomHeun(), dt=1/100)
         @test_nowarn solve(lagprob, RandomHeun(), dt=1/100, EnsembleSerial())
 
-        @test lagsol() ≈ sum.(lagsol.enssol.u) ≈ lagsol(:backward)
+        @test lagsol() ≈ getindex.(lagsol.enssol.u, :lbwd) ≈ lagsol(:backward)
         @test lagsol(:backward) ≈ getindex.(lagsol.enssol.u, :lbwd)
 
         @test_throws ArgumentError LagrangianDescriptorProblem(

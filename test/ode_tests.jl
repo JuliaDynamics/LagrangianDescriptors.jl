@@ -1,7 +1,7 @@
 using LagrangianDescriptors
 using OrdinaryDiffEq
 using QuadGK, Test
-using SciMLBase: EnsembleSerial, remake
+using SciMLBase: EnsembleSerial, remake, ReturnCode, successful_retcode
 using LagrangianDescriptors: augmentprob
 using LinearAlgebra: norm
 
@@ -236,7 +236,7 @@ end
         lagsol = @test_nowarn solve(lagprob, Tsit5())
         @test_nowarn solve(lagprob, Tsit5(), EnsembleSerial())
 
-        @test lagsol() == lagsol(:total) == lagsol(:both) ≈ sum.(lagsol.enssol.u)
+        @test lagsol() == lagsol(:total) == lagsol(:both) ≈ getindex.(lagsol.enssol.u, :lfwd) + getindex.(lagsol.enssol.u, :lbwd)
         @test lagsol(:forward) ≈ getindex.(lagsol.enssol.u, :lfwd)
         @test lagsol(:backward) ≈ getindex.(lagsol.enssol.u, :lbwd)
         @test lagsol(:difference) ≈ lagsol(:forward) - lagsol(:backward)
@@ -248,7 +248,7 @@ end
         lagsol = @test_nowarn solve(lagprob, Tsit5())
         @test_nowarn solve(lagprob, Tsit5(), EnsembleSerial())
 
-        @test lagsol() ≈ sum.(lagsol.enssol.u) ≈ lagsol(:forward)
+        @test lagsol() ≈ getindex.(lagsol.enssol.u, :lfwd) ≈ lagsol(:forward)
         @test lagsol(:forward) ≈ getindex.(lagsol.enssol.u, :lfwd)
 
         lagprob =
@@ -256,7 +256,7 @@ end
         lagsol = @test_nowarn solve(lagprob, Tsit5())
         @test_nowarn solve(lagprob, Tsit5(), EnsembleSerial())
 
-        @test lagsol() ≈ sum.(lagsol.enssol.u) ≈ lagsol(:backward)
+        @test lagsol() ≈ getindex.(lagsol.enssol.u, :lbwd) ≈ lagsol(:backward)
         @test lagsol(:backward) ≈ getindex.(lagsol.enssol.u, :lbwd)
 
         @test_throws ArgumentError LagrangianDescriptorProblem(
@@ -309,5 +309,20 @@ end
         lagsol_no_term = @test_nowarn solve(lagprob_fwd, Tsit5())
         @test lagsol_no_term.terminated isa BitVector
         @test !any(lagsol_no_term.terminated)
+
+        # Return codes: trajectories stopped by the threshold are `Terminated`
+        @test lagsol.retcodes isa Vector{ReturnCode.T}
+        @test length(lagsol.retcodes) == length(uu0)
+        @test lagsol.terminated == (lagsol.retcodes .== ReturnCode.Terminated)
+        @test all(==(ReturnCode.Success), lagsol_no_term.retcodes)
+        @test all(s -> s.retcode isa ReturnCode.T, lagsol.enssol.u)
+
+        # Return codes: diverging backward trajectories that hit `maxiters` are flagged,
+        # even though they are not `terminated`
+        lagprob_bwd = LagrangianDescriptorProblem(prob, M, uu0[1, :]; direction=:backward)
+        lagsol_maxiters = solve(lagprob_bwd, Tsit5(); maxiters = 1000)
+        @test any(==(ReturnCode.MaxIters), lagsol_maxiters.retcodes)
+        @test !all(successful_retcode, lagsol_maxiters.retcodes)
+        @test !any(lagsol_maxiters.terminated)
     end
 end

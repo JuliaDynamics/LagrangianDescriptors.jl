@@ -3,11 +3,12 @@
 _trajectory_index(i::Integer, repeat) = i
 _trajectory_index(ctx) = ctx.sim_id
 
-# Lagrangian descriptors at the end of a trajectory, kept as the output of each trajectory
-function _descriptors(u, direction::Symbol, terminated::Bool)
-    direction == :both && return ComponentArray(lfwd = u.lfwd, lbwd = u.lbwd, terminated = terminated)
-    direction == :forward && return ComponentArray(lfwd = u.lfwd, terminated = terminated)
-    return ComponentArray(lbwd = u.lbwd, terminated = terminated)
+# Output of each trajectory: the Lagrangian descriptors at the end of the trajectory and
+# the solver's return code
+function _descriptors(u, direction::Symbol, retcode)
+    direction == :both && return (lfwd = u.lfwd, lbwd = u.lbwd, retcode = retcode)
+    direction == :forward && return (lfwd = u.lfwd, retcode = retcode)
+    return (lbwd = u.lbwd, retcode = retcode)
 end
 
 """
@@ -32,7 +33,7 @@ Defines a Lagrangian descriptor problem associated with a SciML differential equ
 
 With the given arguments, the constructor for `LagrangianDescriptorProblem` returns a type with the following arguments:
 
-- `ensprob::T1`: a suitable ensemble problem to be solved with the given collection of initial conditions `uu0` for each solve, with a suitable `prob_func` to iterate through the collection and a suitable `output_func` to only collect the Lagrangian descriptors at the end of the time interval.
+- `ensprob::T1`: a suitable ensemble problem to be solved with the given collection of initial conditions `uu0` for each solve, with a suitable `prob_func` to iterate through the collection and a suitable `output_func` to only collect the Lagrangian descriptors at the end of the time interval, along with the solver's return code of each trajectory.
 - `uu0::T2`: the given collection of initial conditions.
 - `direction::T3`: the given or the default direction of the flow.
 
@@ -81,7 +82,7 @@ struct LagrangianDescriptorProblem{T1,T2,T3}
             remake(augprob, u0 = _augmented_u0(uu0[i], direction))
         end
         output_func = function (sol, i)
-            (_descriptors(sol.u[end], direction, sol.retcode == SciMLBase.ReturnCode.Terminated), false)
+            (_descriptors(sol.u[end], direction, sol.retcode), false)
         end
 
         augprob = augmentprob(prob, M; direction)

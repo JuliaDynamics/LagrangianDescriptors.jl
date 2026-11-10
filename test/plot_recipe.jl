@@ -34,6 +34,10 @@ using LinearAlgebra: norm
         @test_nowarn plot(lagsol, :backward)
         @test_nowarn plot(lagsol, :difference)
         @test_throws ArgumentError plot(lagsol, :blah)
+
+        # unsupported collection of initial conditions: a vector of two-element vectors
+        lagsol = solve(LagrangianDescriptorProblem(prob, M, [[x, 0.0] for x in range(-1.8, 1.8, length=11)]), Tsit5())
+        @test_throws ArgumentError plot(lagsol)
     end
 
     @testset "Cubic" begin

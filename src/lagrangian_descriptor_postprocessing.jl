@@ -16,13 +16,13 @@ function lagrangian_descriptor(sol::ODESolution, M)
     if isinplace(sol.prob)
         u = similar(sol.prob.u0)
         du = similar(sol.prob.u0)
-        integrand = function (t, u=u, du=du, sol=sol, M=M)
-            u .= sol(t)
+        integrand = function (t)
+            sol(u, t) # interpolate in place
             sol.prob.f(du, u, sol.prob.p, t)
             return M(du, u, sol.prob.p, t)
         end
     else
-        integrand = function (t, sol=sol, M=M)
+        integrand = function (t)
             u = sol(t)
             du = sol.prob.f(u, sol.prob.p, t)
             return M(du, u, sol.prob.p, t)

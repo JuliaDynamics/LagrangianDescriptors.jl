@@ -30,11 +30,7 @@ function solve(prob::LagrangianDescriptorProblem, alg, args...; max_trajectory_v
     end
 
     sol = solve(prob.ensprob, alg, args...; trajectories = length(prob.uu0), kwargs...)
-
-    # Extract terminated mask from the output ComponentArrays
-    terminated = BitVector([Bool(s.terminated) for s in sol.u])
-
-    return LagrangianDescriptorSolution(sol, prob.uu0, prob.direction, terminated)
+    return LagrangianDescriptorSolution(sol, prob.uu0, prob.direction)
 end
 
 # Internal helper: create a termination condition function that checks if

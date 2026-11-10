@@ -16,7 +16,7 @@ using LinearAlgebra: norm
     t0 = 0.0
     tf = 5.0
     tspanfwd = (t0, tf)
-    tspanbwd = (tf, t0)
+    tspanbwd = (t0, 2t0 - tf)
 
     M = function (du, u, p, t) 
         norm(du)

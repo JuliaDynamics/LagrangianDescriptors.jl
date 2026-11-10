@@ -1,7 +1,7 @@
 using LagrangianDescriptors
 using OrdinaryDiffEq
 using QuadGK, Test
-using SciMLBase: EnsembleSerial, remake
+using SciMLBase: EnsembleSerial, remake, ReturnCode, successful_retcode
 using LagrangianDescriptors: augmentprob
 using LinearAlgebra: norm
 
@@ -168,6 +168,52 @@ using LinearAlgebra: norm
               first(quadgk(t -> M(f.(solbwd(t)), nothing, nothing, nothing), 0.0, 5.0)) atol =
             0.01
     end
+
+    @testset "Non-autonomous" begin
+        # Backward trajectories start at `u0` at time `t0` and go back to `2t0 - tf`.
+        # A non-autonomous system with `t0 != 0` checks the time used in the backward vector field.
+        t0 = 1.0
+        tf = 3.0
+        tspan = (t0, tf)
+        tspanbwd = (t0, 2t0 - tf)
+        M = function (du, u, p, t)
+            norm(du)
+        end
+        kw = (abstol = 1e-10, reltol = 1e-10)
+
+        # out of place
+        f = function (u, p, t)
+            cos(t) - u / 2
+        end
+        u0 = 0.5
+        prob = ODEProblem(f, u0, tspan)
+        solfwd = solve(prob, Tsit5(); kw...)
+        solbwd = solve(remake(prob, tspan = tspanbwd), Tsit5(); kw...)
+        for direction in (:both, :backward)
+            augsol = solve(augmentprob(prob, M; direction), Tsit5(); kw...)
+            @test augsol.u[end].bwd ≈ solbwd.u[end] rtol = 1e-6
+            @test augsol.u[end].lbwd ≈ first(
+                quadgk(t -> M(f(solbwd(t), nothing, t), nothing, nothing, nothing), 2t0 - tf, t0),
+            ) rtol = 1e-6
+        end
+        augsol = solve(augmentprob(prob, M), Tsit5(); kw...)
+        @test augsol.u[end].fwd ≈ solfwd.u[end] rtol = 1e-6
+        @test augsol.u[end].lfwd ≈ first(
+            quadgk(t -> M(f(solfwd(t), nothing, t), nothing, nothing, nothing), t0, tf),
+        ) rtol = 1e-6
+
+        # in place
+        f! = function (du, u, p, t)
+            du .= cos(t) .- u ./ 2
+        end
+        u0 = [0.5, -0.2]
+        prob = ODEProblem(f!, u0, tspan)
+        solbwd = solve(remake(prob, tspan = tspanbwd), Tsit5(); kw...)
+        for direction in (:both, :backward)
+            augsol = solve(augmentprob(prob, M; direction), Tsit5(); kw...)
+            @test augsol.u[end].bwd ≈ solbwd.u[end] rtol = 1e-6
+        end
+    end
 end
 
 @testset "Lag Desc ODE" begin
@@ -190,7 +236,7 @@ end
         lagsol = @test_nowarn solve(lagprob, Tsit5())
         @test_nowarn solve(lagprob, Tsit5(), EnsembleSerial())
 
-        @test lagsol() == lagsol(:total) == lagsol(:both) ≈ sum.(lagsol.enssol.u)
+        @test lagsol() == lagsol(:total) == lagsol(:both) ≈ getindex.(lagsol.enssol.u, :lfwd) + getindex.(lagsol.enssol.u, :lbwd)
         @test lagsol(:forward) ≈ getindex.(lagsol.enssol.u, :lfwd)
         @test lagsol(:backward) ≈ getindex.(lagsol.enssol.u, :lbwd)
         @test lagsol(:difference) ≈ lagsol(:forward) - lagsol(:backward)
@@ -202,7 +248,7 @@ end
         lagsol = @test_nowarn solve(lagprob, Tsit5())
         @test_nowarn solve(lagprob, Tsit5(), EnsembleSerial())
 
-        @test lagsol() ≈ sum.(lagsol.enssol.u) ≈ lagsol(:forward)
+        @test lagsol() ≈ getindex.(lagsol.enssol.u, :lfwd) ≈ lagsol(:forward)
         @test lagsol(:forward) ≈ getindex.(lagsol.enssol.u, :lfwd)
 
         lagprob =
@@ -210,7 +256,7 @@ end
         lagsol = @test_nowarn solve(lagprob, Tsit5())
         @test_nowarn solve(lagprob, Tsit5(), EnsembleSerial())
 
-        @test lagsol() ≈ sum.(lagsol.enssol.u) ≈ lagsol(:backward)
+        @test lagsol() ≈ getindex.(lagsol.enssol.u, :lbwd) ≈ lagsol(:backward)
         @test lagsol(:backward) ≈ getindex.(lagsol.enssol.u, :lbwd)
 
         @test_throws ArgumentError LagrangianDescriptorProblem(
@@ -263,5 +309,23 @@ end
         lagsol_no_term = @test_nowarn solve(lagprob_fwd, Tsit5())
         @test lagsol_no_term.terminated isa BitVector
         @test !any(lagsol_no_term.terminated)
+
+        # Return codes: trajectories stopped by the threshold are `Terminated`
+        @test lagsol.retcodes isa Vector{ReturnCode.T}
+        @test length(lagsol.retcodes) == length(uu0)
+        @test lagsol.terminated == (lagsol.retcodes .== ReturnCode.Terminated)
+        @test all(==(ReturnCode.Success), lagsol_no_term.retcodes)
+        @test all(s -> s.retcode isa ReturnCode.T, lagsol.enssol.u)
+
+        # Return codes: diverging backward trajectories that hit `maxiters` are flagged,
+        # even though they are not `terminated`. The solver warns about each of them;
+        # `@test_logs` checks that it does and keeps the warnings out of the test output.
+        lagprob_bwd = LagrangianDescriptorProblem(prob, M, uu0[1, :]; direction=:backward)
+        lagsol_maxiters = @test_logs (:warn, r"maxiters") match_mode = :any solve(
+            lagprob_bwd, Tsit5(); maxiters = 1000
+        )
+        @test any(==(ReturnCode.MaxIters), lagsol_maxiters.retcodes)
+        @test !all(successful_retcode, lagsol_maxiters.retcodes)
+        @test !any(lagsol_maxiters.terminated)
     end
 end

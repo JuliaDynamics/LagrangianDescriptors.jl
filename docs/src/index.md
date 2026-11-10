@@ -110,9 +110,11 @@ More precisely, the implementation works as follows:
     1. `LagrangianDescriptorProblem` then wraps an [EnsembleProblem](https://diffeq.sciml.ai/dev/features/ensemble/) for the augmented system and with the given collection `uu_0` of initial conditions to be used at each trajectory of the ensemble;
 1. Solve the `LagrangianDescriptorProblem` by invoking `lagsol = solve(lagprob, alg, args..., kwargs...)`, with the appropriate algorithm and any other argument for the ensemble solve of the underlying ensemble problem `lagprob.ensprob`. 
 1. `solve` returns a `LagrangianDescriptorSolution` containing the associated collection of (forward and backward) Lagrangian descriptor values at the final time of each simulation (which is ``t_f`` for the forward components and corresponds to ``2t_0 - t_f`` for the backward ones). This solution has the following fields:
-    1. `enssol`: the `EnsembleSolution` of the associated ensemble problem, where `enssol.u` contains a vector with the component arays `lfwd` and `lbwd` (or only one of them, depending on the `direction`) for the Lagrangian descriptors at the final time of the simulation (i.e. ``t_f`` for the forward Lagrangian and ``2t_0 - t_f`` for the backward);
+    1. `enssol`: the `EnsembleSolution` of the associated ensemble problem, where each element of `enssol.u` is a `NamedTuple` with the Lagrangian descriptors `lfwd` and `lbwd` (or only one of them, depending on the `direction`) at the final time of the simulation (i.e. ``t_f`` for the forward Lagrangian and ``2t_0 - t_f`` for the backward), and the solver's return code `retcode`;
     1. `uu0`: the given collection of initial conditions;
-    1. `direction`: the direction chosen, which defaults to `:both`, but can be also `:forward` or `:backward`.
+    1. `direction`: the direction chosen, which defaults to `:both`, but can be also `:forward` or `:backward`;
+    1. `terminated`: which trajectories were stopped early by the keyword `max_trajectory_value` of `solve`;
+    1. `retcodes`: the solver's return code of each trajectory, to detect trajectories that did not finish normally (e.g. with `.!SciMLBase.successful_retcode.(lagsol.retcodes)`).
 1. Finally, one can use `plot` to visualize either the forward, or the backward, or the sum (total), or even the difference, of the forward and backward Lagrangian descriptor, via a plot recipe for the `LagrangianDescriptorSolution`, i.e. by calling `plot(lagsol)` or `plot(lagsol, direction)`, where `direction` is either `:forward`, `:backward`, `:total` or `:difference`.
 
 ## Current state

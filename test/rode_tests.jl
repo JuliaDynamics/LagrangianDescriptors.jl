@@ -22,28 +22,28 @@ using LinearAlgebra: norm
         end
 
         augprob = @test_nowarn augmentprob(prob, M)
-        augsol = @test_nowarn solve(augprob, RandomHeun(), dt=1/100)
+        augsol = @test_nowarn solve(augprob, RandomHeun(), dt=1/100, save_noise=true)
         @test length(augsol.u[begin]) == 4
         @test augsol.u[begin].fwd == augsol.u[begin].bwd == u0
         @test augsol.t ≈ augsol.W.t
-        @test augsol.u[end].lfwd ≈ sum(M.(f.(getindex.(augsol.u, :fwd), p, augsol.t, augsol.W.u), getindex.(augsol.u, :fwd), p, augsol.t, augsol.W.u)[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
-        @test augsol.u[end].lbwd ≈ sum(M.(f.(getindex.(augsol.u, :bwd), p, augsol.t, augsol.W.u), getindex.(augsol.u, :bwd), p, augsol.t, augsol.W.u)[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
+        @test augsol.u[end].lfwd ≈ sum(M.(f.(getindex.(augsol.u, :fwd), p, augsol.t, first.(augsol.W.u)), getindex.(augsol.u, :fwd), p, augsol.t, first.(augsol.W.u))[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
+        @test augsol.u[end].lbwd ≈ sum(M.(f.(getindex.(augsol.u, :bwd), p, augsol.t, first.(augsol.W.u)), getindex.(augsol.u, :bwd), p, augsol.t, first.(augsol.W.u))[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
         @test augsol.u[begin].lfwd ≈ 0.0
         @test augsol.u[begin].lbwd ≈ 0.0
 
         augprob = @test_nowarn augmentprob(prob, M; direction = :forward)
-        augsol = @test_nowarn solve(augprob, RandomHeun(), dt=1/100)
+        augsol = @test_nowarn solve(augprob, RandomHeun(), dt=1/100, save_noise=true)
         @test length(augsol.u[begin]) == 2
         @test augsol.u[begin].fwd == u0
         @test augsol.u[begin].lfwd ≈ 0.0
-        @test augsol.u[end].lfwd ≈ sum(M.(f.(getindex.(augsol.u, :fwd), p, augsol.t, augsol.W.u), getindex.(augsol.u, :fwd), p, augsol.t, augsol.W.u)[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
+        @test augsol.u[end].lfwd ≈ sum(M.(f.(getindex.(augsol.u, :fwd), p, augsol.t, first.(augsol.W.u)), getindex.(augsol.u, :fwd), p, augsol.t, first.(augsol.W.u))[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
 
         augprob = @test_nowarn augmentprob(prob, M; direction = :backward)
-        augsol = @test_nowarn solve(augprob, RandomHeun(), dt=1/100)
+        augsol = @test_nowarn solve(augprob, RandomHeun(), dt=1/100, save_noise=true)
         @test length(augsol.u[begin]) == 2
         @test augsol.u[begin].bwd == u0
         @test augsol.u[begin].lbwd ≈ 0.0
-        @test augsol.u[end].lbwd ≈ sum(M.(f.(getindex.(augsol.u, :bwd), p, augsol.t, augsol.W.u), getindex.(augsol.u, :bwd), p, augsol.t, augsol.W.u)[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
+        @test augsol.u[end].lbwd ≈ sum(M.(f.(getindex.(augsol.u, :bwd), p, augsol.t, first.(augsol.W.u)), getindex.(augsol.u, :bwd), p, augsol.t, first.(augsol.W.u))[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
 
         @test_throws ArgumentError augmentprob(prob, M; direction = :blah)
     end
@@ -81,6 +81,47 @@ using LinearAlgebra: norm
         @test augsol.u[end].lfwd ≈ sum(M.(f.(getindex.(augsol.u, :fwd)) .+ p .* augsol.W.u, getindex.(augsol.u, :fwd), p, augsol.t, augsol.W.u)[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
         @test augsol.u[end].lbwd ≈ sum(M.(f.(getindex.(augsol.u, :bwd)) .+ p .* augsol.W.u, getindex.(augsol.u, :bwd), p, augsol.t, augsol.W.u)[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
     end
+
+    @testset "Default noise" begin
+        # Without `noise` or `rand_prototype`, the noise should have the shape it has
+        # when solving the original problem, and start at `t0`.
+        M = function (du, u, p, t, W)
+            sum(abs2, du)
+        end
+        t0 = 1.0
+        tf = 3.0
+
+        # scalar state: `f` and `M` receive scalar noise, stored as a one-element vector
+        f = function (u, p, t, W)
+            W isa Number || error("expected scalar noise, got $(typeof(W))")
+            -u + W
+        end
+        Mscalar = function (du, u, p, t, W)
+            W isa Number || error("expected scalar noise, got $(typeof(W))")
+            abs2(du)
+        end
+        prob = RODEProblem(f, 0.5, (t0, tf))
+        for direction in (:both, :forward, :backward)
+            augsol = @test_nowarn solve(augmentprob(prob, Mscalar; direction), RandomHeun(), dt = 1 / 100)
+            @test first(augsol.W.t) == t0
+            @test length(augsol.W.u[end]) == 1
+        end
+        lagsol = solve(LagrangianDescriptorProblem(prob, Mscalar, range(-1, 1, length = 5)), RandomHeun(), dt = 1 / 100)
+        @test all(isfinite, lagsol())
+
+        # vector state: noise with the same shape as the state
+        n = 3
+        f! = function (du, u, p, t, W)
+            du .= -u .+ W
+        end
+        prob = RODEProblem(f!, rand(n), (t0, tf))
+        sol = solve(prob, RandomHeun(), dt = 1 / 100)
+        for direction in (:both, :forward, :backward)
+            augsol = @test_nowarn solve(augmentprob(prob, M; direction), RandomHeun(), dt = 1 / 100)
+            @test first(augsol.W.t) == t0
+            @test size(augsol.W.u[end]) == size(sol.W.u[end]) == (n,)
+        end
+    end
 end
 
 @testset "Lag Desc RODE" begin
@@ -103,7 +144,7 @@ end
         lagsol = @test_nowarn solve(lagprob, RandomHeun(), dt=1/100)
         @test_nowarn solve(lagprob, RandomHeun(), dt=1/100, EnsembleSerial())
 
-        @test lagsol() == lagsol(:total) == lagsol(:both) ≈ sum.(lagsol.enssol.u)
+        @test lagsol() == lagsol(:total) == lagsol(:both) ≈ getindex.(lagsol.enssol.u, :lfwd) + getindex.(lagsol.enssol.u, :lbwd)
         @test lagsol(:forward) ≈ getindex.(lagsol.enssol.u, :lfwd)
         @test lagsol(:backward) ≈ getindex.(lagsol.enssol.u, :lbwd)
         @test lagsol(:difference) ≈ lagsol(:forward) - lagsol(:backward)
@@ -115,7 +156,7 @@ end
         lagsol = @test_nowarn solve(lagprob, RandomHeun(), dt=1/100)
         @test_nowarn solve(lagprob, RandomHeun(), dt=1/100, EnsembleSerial())
 
-        @test lagsol() ≈ sum.(lagsol.enssol.u) ≈ lagsol(:forward)
+        @test lagsol() ≈ getindex.(lagsol.enssol.u, :lfwd) ≈ lagsol(:forward)
         @test lagsol(:forward) ≈ getindex.(lagsol.enssol.u, :lfwd)
 
         lagprob =
@@ -123,7 +164,7 @@ end
         lagsol = @test_nowarn solve(lagprob, RandomHeun(), dt=1/100)
         @test_nowarn solve(lagprob, RandomHeun(), dt=1/100, EnsembleSerial())
 
-        @test lagsol() ≈ sum.(lagsol.enssol.u) ≈ lagsol(:backward)
+        @test lagsol() ≈ getindex.(lagsol.enssol.u, :lbwd) ≈ lagsol(:backward)
         @test lagsol(:backward) ≈ getindex.(lagsol.enssol.u, :lbwd)
 
         @test_throws ArgumentError LagrangianDescriptorProblem(

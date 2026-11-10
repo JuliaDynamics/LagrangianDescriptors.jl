@@ -1,30 +1,31 @@
 """
-struct LagrangianDescriptorSolution{T1, T2, T3}
-    enssol::T1
-    uu0::T2
-    direction::T3
-    terminated::BitVector
-    retcodes::Vector{SciMLBase.ReturnCode.T}
-end
+    LagrangianDescriptorSolution
 
-Representation of the solution to a [`LagrangianDescriptorProblem`](@ref).
+The solution of a [`LagrangianDescriptorProblem`](@ref), returned by [`solve`](@ref).
+
+## Lagrangian descriptors
+
+The Lagrangian descriptors are obtained by calling the solution, `lagsol(direction)`; see
+below. They are plotted with `plot(lagsol)`; see the section on plotting.
 
 ## Fields
 
-- `enssol`: the `EnsembleSolution` of the associated ensemble problem in [`LagrangianDescriptorProblem`](@ref). Each element of `enssol.u` is a `NamedTuple` with the Lagrangian descriptors `lfwd` and/or `lbwd` at the end of the trajectory, depending on the direction, and the solver's return code `retcode`.
-- `uu0`: the collection of initial conditions given in 
-the [`LagrangianDescriptorProblem`](@ref).
-- `direction:` the direction given in the [`LagrangianDescriptorProblem`](@ref).
-- `terminated`: a `BitVector` indicating which trajectories were terminated early
-  (e.g., due to divergence when using `max_trajectory_value`).
+- `enssol`: the `EnsembleSolution` of the ensemble problem `prob.ensprob`. Each element of
+  `enssol.u` is a `NamedTuple` with the Lagrangian descriptors `lfwd` and/or `lbwd` at the
+  end of a trajectory, depending on the direction, and the solver's return code `retcode`.
+- `uu0`: the collection of initial conditions of the problem.
+- `direction`: the direction of the problem, `:both`, `:forward` or `:backward`.
+- `terminated`: a `BitVector` marking the trajectories stopped early by the keyword
+  `max_trajectory_value` of [`solve`](@ref).
 - `retcodes`: the solver's return code (a `SciMLBase.ReturnCode.T`) of each trajectory.
-  When solving with several `realizations` (see [`solve`](@ref)), `enssol.u`, `terminated`
-  and `retcodes` have one entry per solve, for all initial conditions of the first
-  realization, then of the second one, and so on.
-  Trajectories that did not finish normally, e.g. because they reached `maxiters` or
-  became unstable, can be found with `.!SciMLBase.successful_retcode.(lagsol.retcodes)`;
-  their Lagrangian descriptors are not reliable. Trajectories stopped by
-  `max_trajectory_value` have the return code `ReturnCode.Terminated`.
+  Trajectories that did not finish normally, e.g. because they reached `maxiters` or became
+  unstable, are found with `.!SciMLBase.successful_retcode.(lagsol.retcodes)`; their
+  Lagrangian descriptors are not reliable. Trajectories stopped by `max_trajectory_value`
+  have the return code `ReturnCode.Terminated`.
+
+When solved with several `realizations` (see [`solve`](@ref)), `enssol.u`, `terminated` and
+`retcodes` have one entry per solve: those of all initial conditions of the first
+realization, then of the second one, and so on.
 """
 struct LagrangianDescriptorSolution{T1,T2,T3}
     enssol::T1
@@ -43,14 +44,24 @@ end
 const DESCRIPTOR_DIRECTIONS = (:forward, :backward, :both, :total, :difference)
 
 """
-    (lagsol::LagrangianDescriptorSolution)(direction::Symbol=:total)
+    (lagsol::LagrangianDescriptorSolution)(direction::Symbol = lagsol.direction)
 
-Depending on the given `direction`, return an array with the sum of the given solution of a Lagrangian descriptor problem, or the forward or the backward or the difference of them, where each element of the array correponds to a given initial condition in the collection of initial conditions.
+The Lagrangian descriptors of the solution, as a vector with one value for each initial
+condition, in the order of `vec(lagsol.uu0)`; e.g. `reshape(lagsol(), size(lagsol.uu0))`
+arranges them like a matrix of initial conditions. The `direction` is one of
 
-When solved with several `realizations` (see [`solve`](@ref)), it returns the mean over the realizations.
+- `:forward`: the forward Lagrangian descriptors;
+- `:backward`: the backward Lagrangian descriptors;
+- `:both` or `:total`: their sum (the default for a problem with both directions);
+- `:difference`: the forward minus the backward Lagrangian descriptors.
+
+The directions other than `:forward` and `:backward` need a problem with both directions.
+When solved with several `realizations` (see [`solve`](@ref)), the mean over the
+realizations is returned.
 """
 function (lagsol::LagrangianDescriptorSolution)(direction::Symbol = lagsol.direction)
     _check_direction(direction, DESCRIPTOR_DIRECTIONS)
+    _check_available(lagsol, direction)
     u = lagsol.enssol.u
     values = if direction == :forward
         getindex.(u, :lfwd)
@@ -62,6 +73,18 @@ function (lagsol::LagrangianDescriptorSolution)(direction::Symbol = lagsol.direc
         getindex.(u, :lfwd) + getindex.(u, :lbwd)
     end
     return _mean_over_realizations(values, length(lagsol.uu0))
+end
+
+# Whether the descriptors needed for `direction` were computed, i.e. the solution of a problem
+# in a single direction only has that direction
+function _check_available(lagsol, direction::Symbol)
+    lagsol.direction == :both || direction == lagsol.direction || throw(
+        ArgumentError(
+            "This solution only has the $(lagsol.direction) Lagrangian descriptors, so " *
+            "`:$direction` is not available; solve the problem with `direction = :both` for it.",
+        ),
+    )
+    return nothing
 end
 
 # Mean over realizations of values ordered as all `n` initial conditions of each realization

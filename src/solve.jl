@@ -1,21 +1,39 @@
 """
-    solve(prob::LagrangianDescriptorProblem, alg, args...; max_trajectory_value::Real=Inf, realizations::Integer=1, kwargs...)
+    solve(prob::LagrangianDescriptorProblem, alg, args...; max_trajectory_value = Inf, realizations = 1, kwargs...)
 
-Solve a [`LagrangianDescriptorProblem`](@ref), which amounts to solving the associated `EnsembleProblem` in `prob.ensprob` and returning a [`LagrangianDescriptorSolution`](@ref).
+Solve a [`LagrangianDescriptorProblem`](@ref), returning a
+[`LagrangianDescriptorSolution`](@ref).
 
-You should provide the necessary `args` and the desired `kwargs` for solving the associated ensemble problem for the underlying Differential Equation problem.
+Each initial condition in `prob.uu0` is solved with the algorithm `alg`, as one trajectory of
+the ensemble problem `prob.ensprob`. The remaining positional arguments `args` and keyword
+arguments `kwargs` are passed on to the ensemble solve, and so to the solve of each
+trajectory. For instance, an ensemble algorithm, such as `EnsembleThreads()` (the default),
+`EnsembleSerial()` or `EnsembleDistributed()`, can be given after `alg`, and tolerances
+(`abstol`, `reltol`), a time step (`dt`), or a `callback` are given as keyword arguments. The
+number of trajectories is set from `prob.uu0` and `realizations`.
 
-## Keyword Arguments
+## Keyword arguments
 
-- `max_trajectory_value::Real=Inf`: Maximum allowed value for trajectory components. When any
-  component of the trajectory exceeds this threshold, the integration is terminated early.
-  This is useful for dissipative systems where backward integration may diverge.
-  The Lagrangian descriptor value accumulated up to termination is preserved.
-- `realizations::Integer=1`: Number of times each initial condition is solved. For random or
-  stochastic equations, each realization has independent noise, and the solution gives the
-  mean of the Lagrangian descriptors over the realizations, as in Balibrea-Iniesta,
+- `max_trajectory_value::Real = Inf`: if finite, a trajectory is stopped as soon as the
+  absolute value of any component of its forward or backward solution exceeds it. This is
+  useful for systems whose solutions diverge, e.g. dissipative systems backward in time.
+  The Lagrangian descriptors accumulated up to that time are kept, and the trajectory is
+  marked in the field `terminated` of the solution.
+- `realizations::Integer = 1`: the number of times each initial condition is solved. For
+  random or stochastic equations, each realization has independent noise, and the solution
+  gives the mean of the Lagrangian descriptors over the realizations, as in Balibrea-Iniesta,
   Lopesino, Wiggins and Mancho (2016). The return codes and the `terminated` flags of the
   solution are kept for each of the `realizations * length(prob.uu0)` solves.
+
+## Examples
+
+```julia
+lagsol = solve(lagprob, Tsit5())                          # an ODE problem
+lagsol = solve(lagprob, Tsit5(), EnsembleSerial(); abstol = 1e-8, reltol = 1e-8)
+lagsol = solve(lagprob, Tsit5(); max_trajectory_value = 1e3)
+lagsol = solve(lagprob, RandomHeun(), dt = 1 / 100)       # a RODE problem
+lagsol = solve(lagprob, SOSRI(); realizations = 50)       # an SDE problem
+```
 """
 function solve(prob::LagrangianDescriptorProblem, alg, args...; max_trajectory_value::Real=Inf, realizations::Integer=1, kwargs...)
     realizations ≥ 1 || throw(

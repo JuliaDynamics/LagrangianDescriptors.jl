@@ -285,6 +285,21 @@ end
         @test sprint(show, lagsol) == "LagrangianDescriptorSolution(5 initial conditions, :both)"
     end
 
+    @testset "Available directions" begin
+        # a solution in a single direction only has the descriptors of that direction
+        prob = ODEProblem((u, p, t) -> -u, 1.0, (0.0, 1.0))
+        M = function (du, u, p, t)
+            abs(du)
+        end
+        for (direction, other) in ((:forward, :backward), (:backward, :forward))
+            lagsol = solve(LagrangianDescriptorProblem(prob, M, [0.5, 1.0]; direction), Tsit5())
+            @test lagsol() == lagsol(direction)
+            for d in (other, :both, :total, :difference)
+                @test_throws ArgumentError lagsol(d)
+            end
+        end
+    end
+
     @testset "Dissipative system with max_trajectory_value" begin
         # Damped Duffing oscillator - dissipative system where backward integration diverges
         function damped_duffing!(du, u, p, t)

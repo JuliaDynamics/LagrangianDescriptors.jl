@@ -79,7 +79,7 @@ With `tspan = (t0, tf)`, the forward problem is solved over `[t0, tf]` and the b
 
 The (global) Lagrangian descriptors are based on the provided local descriptor `M=M(du, u, p, t)`. The (forward/backward) Lagrangian descriptor is the time-integration of the local descriptor along the (forward/backward) trajectory.
 
-If `direction=:forward` or `direction=:backward` are given, then only the forward or backard problem is constructed in the augmented system. The default is `direction=:both`, where both directions are considered.
+If `direction=:forward` or `direction=:backward` are given, then only the forward or backward problem is constructed in the augmented system. The default is `direction=:both`, where both directions are considered.
 """
 function augmentprob(prob::ODEProblem, M; direction::Symbol = :both)
     faug = AugmentedRHS(prob.f, M, first(prob.tspan), isinplace(prob), direction)
@@ -100,7 +100,7 @@ If `prob` has neither `noise` nor `rand_prototype`, the solver's default Wiener 
 
 The (global) Lagrangian descriptors are based on the provided local descriptor `M=M(du, u, p, t, W)`. The (forward/backward) Lagrangian descriptor is the time-integration of the local descriptor along the (forward/backward) trajectory.
 
-If `direction=:forward` or `direction=:backward` are given, then only the forward or backard problem is constructed in the augmented system. The default is `direction=:both`, where both directions are considered.
+If `direction=:forward` or `direction=:backward` are given, then only the forward or backward problem is constructed in the augmented system. The default is `direction=:both`, where both directions are considered.
 """
 function augmentprob(prob::RODEProblem, M; direction::Symbol = :both)
     # With neither `noise` nor `rand_prototype`, the solver creates a default noise shaped
@@ -201,7 +201,7 @@ The noise driving the backward problem is independent of the noise driving the f
 
 The (global) Lagrangian descriptors are based on the provided local descriptor `M=M(du, u, p, t)`, where `du` is the drift `f(u, p, t)`. The (forward/backward) Lagrangian descriptor is the time-integration of the local descriptor along the (forward/backward) stochastic trajectory.
 
-If `direction=:forward` or `direction=:backward` are given, then only the forward or backard problem is constructed in the augmented system. The default is `direction=:both`, where both directions are considered.
+If `direction=:forward` or `direction=:backward` are given, then only the forward or backward problem is constructed in the augmented system. The default is `direction=:both`, where both directions are considered.
 
 Custom noise processes (the `noise` keyword of `SDEProblem`) are not supported, since the augmented system needs noise with a different dimension.
 """

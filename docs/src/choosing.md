@@ -1,0 +1,156 @@
+# Choosing the descriptor and the time window
+
+The picture painted by the Lagrangian descriptors depends on a few choices: the infinitesimal descriptor `M`, the length of the time window, the directions of time, and the grid of initial conditions. This page shows their effect on a simple example, and gives some guidance on how to choose them.
+
+## A model problem
+
+We use the Duffing equation ``\ddot x = x - x^3``, written as the system
+
+```math
+\begin{cases}
+  \dot x = y, \\
+  \dot y = x - x^3.
+\end{cases}
+```
+
+It has a saddle point at the origin, whose stable and unstable manifolds form two homoclinic loops, and two centers, at ``(\pm 1, 0)``, surrounded by periodic orbits.
+
+```@example choosing
+using LagrangianDescriptors, OrdinaryDiffEq, Plots
+using LinearAlgebra: norm
+
+function duffing!(du, u, p, t)
+    du[1] = u[2]
+    du[2] = u[1] - u[1]^3
+end
+
+uu0 = [[x, y] for y in range(-1.0, 1.0, length = 201), x in range(-1.8, 1.8, length = 201)]
+M(du, u, p, t) = norm(du)
+
+prob = ODEProblem(duffing!, [0.0, 0.0], (0.0, 5.0))
+lagsol = solve(LagrangianDescriptorProblem(prob, M, uu0), Tsit5())
+nothing # hide
+```
+
+## Why the method works
+
+With `M(du, u, p, t) = norm(du)`, the forward Lagrangian descriptor is the length of the solution over the time window. Consider two nearby initial conditions on opposite sides of the stable manifold of the saddle. Both approach the saddle, where they slow down, but then they leave it in opposite directions, along the two branches of the unstable manifold, so their lengths differ. Initial conditions on the stable manifold itself stay close to the saddle, where they move slowly. As a result, the forward descriptor, as a function of the initial condition, is not smooth across the stable manifold, which shows up as a sharp line in the picture. In the same way, the backward descriptor reveals the unstable manifolds. See the references in the Overview for the theory, in particular Lopesino, Balibrea-Iniesta, García-Garrido, Wiggins and Mancho (2017).
+
+## Forward, backward and total
+
+The forward descriptors reveal the stable manifolds, the backward ones the unstable manifolds, and their sum, the default, shows both:
+
+```@example choosing
+plot(
+    plot(lagsol, :forward, title = "forward"),
+    plot(lagsol, :backward, title = "backward"),
+    plot(lagsol, :total, title = "total"),
+    layout = (1, 3), size = (1200, 360), margin = 4Plots.mm, titlefont = 10, colorbar = false,
+    xlabel = "x", ylabel = "y",
+)
+savefig("directions.png"); nothing # hide
+```
+
+![Forward, backward and total Lagrangian descriptors of the Duffing equation](directions.png)
+
+If only the stable or only the unstable manifolds are of interest, it is cheaper to solve in a single direction, with the keyword `direction = :forward` or `direction = :backward` of [`LagrangianDescriptorProblem`](@ref).
+
+## The infinitesimal descriptor
+
+The most common choice is the norm of the velocity, `norm(du)`, which makes the descriptor the length of the solution. Another common choice is the "``p``-norm" ``\sum_i |\dot u_i|^p``, with ``0 < p \leq 1``, introduced by Lopesino, Balibrea-Iniesta, García-Garrido, Wiggins and Mancho (2017), for which the singular features at the manifolds are sharper and can be characterized rigorously. The value ``p = 1/2`` is often used:
+
+```@example choosing
+Mhalf(du, u, p, t) = sum(x -> sqrt(abs(x)), du)
+lagsol_half = solve(LagrangianDescriptorProblem(prob, Mhalf, uu0), Tsit5())
+
+plot(
+    plot(lagsol, title = "norm(du)"),
+    plot(lagsol_half, title = "p-norm with p = 1/2"),
+    layout = (1, 2), size = (900, 360), margin = 4Plots.mm, titlefont = 10, colorbar = false,
+    xlabel = "x", ylabel = "y",
+)
+savefig("descriptors.png"); nothing # hide
+```
+
+![Lagrangian descriptors of the Duffing equation with two infinitesimal descriptors](descriptors.png)
+
+Any function with the arguments of the table in the [API](@ref "Lagrangian descriptors") can be used, e.g. depending on the state `u` instead of the velocity, or on a single component of the velocity, to highlight particular features of a problem.
+
+## The time window
+
+The time span `(t0, tf)` of the problem sets the time windows: ``[t_0, t_f]`` forward and ``[2t_0 - t_f, t_0]`` backward, both of length ``\tau = t_f - t_0``. A short window only reveals the structures near each initial condition, and a long one reveals more of them, as the solutions explore more of the phase space:
+
+```@example choosing
+plots = map((1.0, 3.0, 8.0)) do τ
+    sol = solve(LagrangianDescriptorProblem(remake(prob, tspan = (0.0, τ)), M, uu0), Tsit5())
+    plot(sol, title = "τ = $τ")
+end
+plot(plots..., layout = (1, 3), size = (1200, 360), margin = 4Plots.mm, titlefont = 10,
+    colorbar = false, xlabel = "x", ylabel = "y")
+savefig("windows.png"); nothing # hide
+```
+
+![Lagrangian descriptors of the Duffing equation for three time windows](windows.png)
+
+A good window is comparable to the time scales of the dynamics of interest, e.g. a few periods of the periodic orbits, or a few times the time it takes to approach a saddle. With longer windows, the features become thinner and more intricate, which needs a finer grid of initial conditions, and solutions of unbounded systems may grow too large (see below). It is often worth trying a few values of ``\tau``.
+
+For a non-autonomous system, the descriptors are those at the initial time ``t_0``: the structures move with ``t_0``, and changing the start of the time span changes the picture, not only the window.
+
+## Diverging solutions
+
+For some systems, such as dissipative systems backward in time, or systems in which solutions can escape to infinity, some solutions grow very large within the time window. Their descriptors then dominate the color scale, and the solver may take many small steps or fail. The keyword `max_trajectory_value` of [`solve`](@ref LagrangianDescriptors.solve) stops each solution once one of its components exceeds the given value, keeping the descriptor accumulated up to then:
+
+```@example choosing
+function damped_duffing!(du, u, p, t)
+    du[1] = u[2]
+    du[2] = u[1] - u[1]^3 - 0.3u[2]
+end
+
+# with damping, solutions decay forward in time, but grow backward in time
+prob_damped = ODEProblem(damped_duffing!, [0.0, 0.0], (0.0, 8.0))
+lagsol_damped = solve(LagrangianDescriptorProblem(prob_damped, M, uu0), Tsit5(); max_trajectory_value = 10.0)
+plot(lagsol_damped, title = "damped Duffing equation", titlefont = 10, xlabel = "x", ylabel = "y")
+savefig("damped.png"); nothing # hide
+```
+
+![Lagrangian descriptors of the damped Duffing equation, with diverging solutions stopped](damped.png)
+
+The number of solutions stopped early is
+
+```@example choosing
+count(lagsol_damped.terminated)
+```
+
+More generally, the return codes in `lagsol.retcodes` tell which solutions did not finish normally, e.g. because they reached the maximum number of steps; their descriptors are not reliable. See [*Painting the Phase Space of Dissipative Systems with Lagrangian Descriptors*](https://doi.org/10.1016/j.cnsns.2021.106034), by García-Garrido and García-Luengo (2021), for more on dissipative systems.
+
+## The grid of initial conditions
+
+Features thinner than the spacing of the grid are missed, and the cost of the computation grows with the number of initial conditions. A practical approach is to start with a coarse grid over a large region, and then to refine it, or to zoom into the regions of interest:
+
+```@example choosing
+coarse = [[x, y] for y in range(-1.0, 1.0, length = 41), x in range(-1.8, 1.8, length = 41)]
+zoom = [[x, y] for y in range(-0.3, 0.3, length = 201), x in range(-0.3, 0.3, length = 201)]
+plot(
+    plot(solve(LagrangianDescriptorProblem(prob, M, coarse), Tsit5()), title = "41 × 41 grid"),
+    plot(solve(LagrangianDescriptorProblem(prob, M, zoom), Tsit5()), title = "zoom near the saddle"),
+    layout = (1, 2), size = (900, 360), margin = 4Plots.mm, titlefont = 10, colorbar = false,
+    xlabel = "x", ylabel = "y",
+)
+savefig("grids.png"); nothing # hide
+```
+
+![Lagrangian descriptors of the Duffing equation on a coarse grid and on a zoomed grid](grids.png)
+
+The initial conditions do not need to form a grid: any collection can be used, e.g. points along a curve, or a two-dimensional slice of initial conditions of a higher-dimensional system, chosen for plotting with the keyword `idxs` (see the section on plotting in the [API](@ref)).
+
+## Random and stochastic equations
+
+For random and stochastic equations, the picture also depends on the realization of the noise. Averaging over realizations, with the keyword `realizations` of [`solve`](@ref LagrangianDescriptors.solve), shows the structures shared by the realizations. For stochastic equations, the [`IncrementDescriptor`](@ref) gives the descriptor of Balibrea-Iniesta, Lopesino, Wiggins and Mancho (2016), given by the increments of the solutions over a time grid with step `Δt`, whose values depend on `Δt`, so it should be kept fixed when comparing pictures.
+
+## Summary
+
+- Start with `M(du, u, p, t) = norm(du)`, or the ``p``-norm with ``p = 1/2`` for sharper features.
+- Choose the time window from the time scales of the dynamics, and try a few values.
+- Use the forward descriptors for stable manifolds, the backward ones for unstable manifolds, and both for the full picture.
+- Stop diverging solutions with `max_trajectory_value`, and check `lagsol.retcodes`.
+- Start with a coarse grid, then refine it or zoom in.

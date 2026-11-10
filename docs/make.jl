@@ -5,6 +5,7 @@ makedocs(
     sitename = "LagrangianDescriptors.jl",
     pages = [
         "Overview" => "index.md"
+        "Choosing the descriptor and the time window" => "choosing.md"
         "Tutorials" => [
             "ODEs" => "tutorial_ODEs.md",
             "RODEs" => "tutorial_RODEs.md",

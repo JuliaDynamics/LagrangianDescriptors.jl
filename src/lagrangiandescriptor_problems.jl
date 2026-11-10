@@ -11,6 +11,15 @@ function _descriptors(u, direction::Symbol, retcode)
     return (lbwd = u.lbwd, retcode = retcode)
 end
 
+# The augmented problem and the output of each trajectory of the ensemble, for an
+# infinitesimal Lagrangian descriptor `M`; see `increment_descriptor.jl` for another method
+function _ensemble_setup(prob, M, direction::Symbol)
+    output_func = function (sol, i)
+        (_descriptors(sol.u[end], direction, sol.retcode), false)
+    end
+    return augmentprob(prob, M; direction), output_func
+end
+
 """
     LagrangianDescriptorProblem
 
@@ -25,7 +34,7 @@ Defines a Lagrangian descriptor problem associated with a SciML differential equ
 ### Arguments
 
 - `prob`: the differential equation problem (e.g. `ODEProblem`, `SDEProblem`, `RODEProblem`, etc.).
-- `M`: infinitesimal Lagrangian descriptor (e.g. `M=M(du, u, p, t)` for an `ODEProblem` or an `SDEProblem`, where `du` is the drift for the latter, and `M=M(du, u, p, t, W)` for a `RODEProblem`).
+- `M`: infinitesimal Lagrangian descriptor (e.g. `M=M(du, u, p, t)` for an `ODEProblem` or an `SDEProblem`, where `du` is the drift for the latter, and `M=M(du, u, p, t, W)` for a `RODEProblem`), or an [`IncrementDescriptor`](@ref) for the descriptor given by the increments of the solution.
 - `uu0`: collection of initial conditions.
 - `direction`: the direction of the flow, with default `:both`, but also accepting `:forward` and `:backward`.
 
@@ -77,15 +86,12 @@ struct LagrangianDescriptorProblem{T1,T2,T3}
 
     function LagrangianDescriptorProblem(prob, M, uu0; direction::Symbol = :both)
         _check_direction(direction)
+        # with several realizations (see `solve`), trajectory `i` starts at `uu0[mod1(i, n)]`
         prob_func = function (augprob, args...)
             i = _trajectory_index(args...)
-            remake(augprob, u0 = _augmented_u0(uu0[i], direction))
+            remake(augprob, u0 = _augmented_u0(uu0[mod1(i, length(uu0))], direction))
         end
-        output_func = function (sol, i)
-            (_descriptors(sol.u[end], direction, sol.retcode), false)
-        end
-
-        augprob = augmentprob(prob, M; direction)
+        augprob, output_func = _ensemble_setup(prob, M, direction)
         ensprob = EnsembleProblem(augprob, prob_func = prob_func, output_func = output_func)
         new{typeof(ensprob),typeof(uu0),typeof(direction)}(ensprob, uu0, direction)
     end

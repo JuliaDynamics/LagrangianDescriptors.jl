@@ -121,6 +121,8 @@ More precisely, the implementation works as follows:
 
 The package is still in an embrionary phase and currently accepts differential equations of the type `ODEProblem`, `RODEProblem`, and `SDEProblem`. Other problems will come eventually.
 
+Besides the Lagrangian descriptors given by the time integral of an infinitesimal descriptor `M`, the package implements the descriptor given by the sum of the `p`-th powers of the increments of the solution over a time grid, introduced for stochastic equations by Balibrea-Iniesta, Lopesino, Wiggins and Mancho (see the References), via [`IncrementDescriptor`](@ref). For random and stochastic equations, the mean of the descriptors over many realizations of the noise is obtained with the keyword `realizations` of [`solve`](@ref LagrangianDescriptors.solve).
+
 The plot recipe works for some types of collections of initial conditions (e.g. a `AbstractVector{<:Number}`, for scalar problems, and `AbstractMatrix{<:AbstractVector{<:Number}}` with the `AbstractVector` of length two, for two-dimensional problems). More general and flexible plot recipes will also be implemented.
 
 ## Roadmap

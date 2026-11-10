@@ -1,5 +1,5 @@
 using LagrangianDescriptors
-using OrdinaryDiffEq
+using OrdinaryDiffEq, StochasticDiffEq
 using Plots, Test
 using SciMLBase: EnsembleSerial, remake
 using LagrangianDescriptors: augmentprob
@@ -66,5 +66,21 @@ using LinearAlgebra: norm
         @test_nowarn plot(lagsol, :backward)
         @test_nowarn plot(lagsol, :difference)
         @test_throws ArgumentError plot(lagsol, :blah)
+    end
+
+    @testset "Realizations" begin
+        # averaged solutions are plotted like any other
+        f = function (u, p, t)
+            [u[2], u[1] - u[1]^3]
+        end
+        g = function (u, p, t)
+            [0.0, 0.1]
+        end
+        prob = SDEProblem(f, g, [0.0, 0.0], (0.0, 2.0))
+        uu0 = [[x, y] for y in range(-1, 1, length = 11), x in range(-1, 1, length = 11)]
+        lagsol = solve(LagrangianDescriptorProblem(prob, IncrementDescriptor(Δt = 0.05), uu0), EM(), dt = 0.05; realizations = 3)
+        @test length(lagsol()) == length(uu0)
+        @test_nowarn plot(lagsol)
+        @test_nowarn plot(lagsol, :forward)
     end
 end

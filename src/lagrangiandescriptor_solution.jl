@@ -18,6 +18,9 @@ the [`LagrangianDescriptorProblem`](@ref).
 - `terminated`: a `BitVector` indicating which trajectories were terminated early
   (e.g., due to divergence when using `max_trajectory_value`).
 - `retcodes`: the solver's return code (a `SciMLBase.ReturnCode.T`) of each trajectory.
+  When solving with several `realizations` (see [`solve`](@ref)), `enssol.u`, `terminated`
+  and `retcodes` have one entry per solve, for all initial conditions of the first
+  realization, then of the second one, and so on.
   Trajectories that did not finish normally, e.g. because they reached `maxiters` or
   became unstable, can be found with `.!SciMLBase.successful_retcode.(lagsol.retcodes)`;
   their Lagrangian descriptors are not reliable. Trajectories stopped by
@@ -43,12 +46,26 @@ const DESCRIPTOR_DIRECTIONS = (:forward, :backward, :both, :total, :difference)
     (lagsol::LagrangianDescriptorSolution)(direction::Symbol=:total)
 
 Depending on the given `direction`, return an array with the sum of the given solution of a Lagrangian descriptor problem, or the forward or the backward or the difference of them, where each element of the array correponds to a given initial condition in the collection of initial conditions.
+
+When solved with several `realizations` (see [`solve`](@ref)), it returns the mean over the realizations.
 """
 function (lagsol::LagrangianDescriptorSolution)(direction::Symbol = lagsol.direction)
     _check_direction(direction, DESCRIPTOR_DIRECTIONS)
     u = lagsol.enssol.u
-    direction == :forward && return getindex.(u, :lfwd)
-    direction == :backward && return getindex.(u, :lbwd)
-    direction == :difference && return getindex.(u, :lfwd) - getindex.(u, :lbwd)
-    return getindex.(u, :lfwd) + getindex.(u, :lbwd) # :both or :total
+    values = if direction == :forward
+        getindex.(u, :lfwd)
+    elseif direction == :backward
+        getindex.(u, :lbwd)
+    elseif direction == :difference
+        getindex.(u, :lfwd) - getindex.(u, :lbwd)
+    else # :both or :total
+        getindex.(u, :lfwd) + getindex.(u, :lbwd)
+    end
+    return _mean_over_realizations(values, length(lagsol.uu0))
+end
+
+# Mean over realizations of values ordered as all `n` initial conditions of each realization
+function _mean_over_realizations(values, n)
+    length(values) == n && return values
+    return vec(sum(reshape(values, n, :), dims = 2)) / (length(values) ÷ n)
 end

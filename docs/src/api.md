@@ -19,6 +19,12 @@ LagrangianDescriptors.LagrangianDescriptorSolution
 LagrangianDescriptors.solve
 ```
 
+## Descriptors
+
+```@docs
+LagrangianDescriptors.IncrementDescriptor
+```
+
 ## Post-processing
 
 ```@docs

@@ -1,5 +1,5 @@
 """
-    solve(prob::LagrangianDescriptorProblem, alg, args...; max_trajectory_value::Real=Inf, kwargs...)
+    solve(prob::LagrangianDescriptorProblem, alg, args...; max_trajectory_value::Real=Inf, realizations::Integer=1, kwargs...)
 
 Solve a [`LagrangianDescriptorProblem`](@ref), which amounts to solving the associated `EnsembleProblem` in `prob.ensprob` and returning a [`LagrangianDescriptorSolution`](@ref).
 
@@ -11,8 +11,16 @@ You should provide the necessary `args` and the desired `kwargs` for solving the
   component of the trajectory exceeds this threshold, the integration is terminated early.
   This is useful for dissipative systems where backward integration may diverge.
   The Lagrangian descriptor value accumulated up to termination is preserved.
+- `realizations::Integer=1`: Number of times each initial condition is solved. For random or
+  stochastic equations, each realization has independent noise, and the solution gives the
+  mean of the Lagrangian descriptors over the realizations, as in Balibrea-Iniesta,
+  Lopesino, Wiggins and Mancho (2016). The return codes and the `terminated` flags of the
+  solution are kept for each of the `realizations * length(prob.uu0)` solves.
 """
-function solve(prob::LagrangianDescriptorProblem, alg, args...; max_trajectory_value::Real=Inf, kwargs...)
+function solve(prob::LagrangianDescriptorProblem, alg, args...; max_trajectory_value::Real=Inf, realizations::Integer=1, kwargs...)
+    realizations ≥ 1 || throw(
+        ArgumentError("The number of `realizations` must be positive; got `$realizations`."),
+    )
     # This first solve was a hack on 1.7.2 rosetta; otherwise the subsequente solve would hang
     # But it is not needed on mac native and probably not on other systems as well
     # solve(prob.ensprob.prob, alg; kwargs...)
@@ -29,7 +37,8 @@ function solve(prob::LagrangianDescriptorProblem, alg, args...; max_trajectory_v
         kwargs = merge(NamedTuple(kwargs), (callback=merged_cb,))
     end
 
-    sol = solve(prob.ensprob, alg, args...; trajectories = length(prob.uu0), kwargs...)
+    trajectories = realizations * length(prob.uu0)
+    sol = solve(prob.ensprob, alg, args...; trajectories, kwargs...)
     return LagrangianDescriptorSolution(sol, prob.uu0, prob.direction)
 end
 

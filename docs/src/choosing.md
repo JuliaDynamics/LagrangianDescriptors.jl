@@ -34,7 +34,7 @@ nothing # hide
 
 ## Why the method works
 
-With `M(du, u, p, t) = norm(du)`, the forward Lagrangian descriptor is the length of the solution over the time window. Consider two nearby initial conditions on opposite sides of the stable manifold of the saddle. Both approach the saddle, where they slow down, but then they leave it in opposite directions, along the two branches of the unstable manifold, so their lengths differ. Initial conditions on the stable manifold itself stay close to the saddle, where they move slowly. As a result, the forward descriptor, as a function of the initial condition, is not smooth across the stable manifold, which shows up as a sharp line in the picture. In the same way, the backward descriptor reveals the unstable manifolds. See the references in the Overview for the theory, in particular Lopesino, Balibrea-Iniesta, García-Garrido, Wiggins and Mancho (2017).
+With `M(du, u, p, t) = norm(du)`, the forward Lagrangian descriptor is the length of the solution over the time window. Consider two nearby initial conditions on opposite sides of the stable manifold of the saddle. Both approach the saddle, where they slow down, but then they leave it in opposite directions, along the two branches of the unstable manifold, so their lengths differ. Initial conditions on the stable manifold itself stay close to the saddle, where they move slowly. As a result, the forward descriptor, as a function of the initial condition, is not smooth across the stable manifold, which shows up as a sharp line in the picture. In the same way, the backward descriptor reveals the unstable manifolds. See [ManchoEtAl2013](@citet) and [LopesinoEtAl2017](@citet) for the theory.
 
 ## Forward, backward and total
 
@@ -57,7 +57,7 @@ If only the stable or only the unstable manifolds are of interest, it is cheaper
 
 ## The infinitesimal descriptor
 
-The most common choice is the norm of the velocity, `norm(du)`, which makes the descriptor the length of the solution. Another common choice is the "``p``-norm" ``\sum_i |\dot u_i|^p``, with ``0 < p \leq 1``, introduced by Lopesino, Balibrea-Iniesta, García-Garrido, Wiggins and Mancho (2017), for which the singular features at the manifolds are sharper and can be characterized rigorously. The value ``p = 1/2`` is often used:
+The most common choice is the norm of the velocity, `norm(du)`, which makes the descriptor the length of the solution. Another common choice is the "``p``-norm" ``\sum_i |\dot u_i|^p``, with ``0 < p \leq 1``, introduced by [LopesinoEtAl2017](@citet), for which the singular features at the manifolds are sharper and can be characterized rigorously. The value ``p = 1/2`` is often used:
 
 ```@example choosing
 Mhalf(du, u, p, t) = sum(x -> sqrt(abs(x)), du)
@@ -121,7 +121,7 @@ The number of solutions stopped early is
 count(lagsol_damped.terminated)
 ```
 
-More generally, the return codes in `lagsol.retcodes` tell which solutions did not finish normally, e.g. because they reached the maximum number of steps; their descriptors are not reliable. See [*Painting the Phase Space of Dissipative Systems with Lagrangian Descriptors*](https://doi.org/10.1016/j.cnsns.2021.106034), by García-Garrido and García-Luengo (2021), for more on dissipative systems.
+More generally, the return codes in `lagsol.retcodes` tell which solutions did not finish normally, e.g. because they reached the maximum number of steps; their descriptors are not reliable. See [GarciaGarridoGarciaLuengo2022](@citet) for more on dissipative systems.
 
 ## The grid of initial conditions
 
@@ -145,7 +145,7 @@ The initial conditions do not need to form a grid: any collection can be used, e
 
 ## Random and stochastic equations
 
-For random and stochastic equations, the picture also depends on the realization of the noise. Averaging over realizations, with the keyword `realizations` of [`solve`](@ref LagrangianDescriptors.solve), shows the structures shared by the realizations. For stochastic equations, the [`IncrementDescriptor`](@ref) gives the descriptor of Balibrea-Iniesta, Lopesino, Wiggins and Mancho (2016), given by the increments of the solutions over a time grid with step `Δt`, whose values depend on `Δt`, so it should be kept fixed when comparing pictures.
+For random and stochastic equations, the picture also depends on the realization of the noise. Averaging over realizations, with the keyword `realizations` of [`solve`](@ref LagrangianDescriptors.solve), shows the structures shared by the realizations. For stochastic equations, the [`IncrementDescriptor`](@ref) gives the descriptor of [BalibreaIniestaEtAl2016](@citet), given by the increments of the solutions over a time grid with step `Δt`, whose values depend on `Δt`, so it should be kept fixed when comparing pictures.
 
 ## Summary
 

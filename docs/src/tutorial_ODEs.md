@@ -4,7 +4,7 @@ We consider, here, some examples of applying the Lagrangian descriptor method to
 
 ## Periodically-forced Duffing equation
 
-We start with an application of the method of Lagrangian descriptors to the periodically-forced Duffing equation, as illustrated in [Painting the Phase Portrait of a Dynamical System with the Computational Tool of Lagrangian Descriptors](https://www.ams.org/journals/notices/202206/noti2489/noti2489.html?adat=June/July%202022&trk=2489&galt=none&cat=feature&pdfissue=202206&pdffile=rnoti-p936.pdf). The equation takes the form
+We start with an application of the method of Lagrangian descriptors to the periodically-forced Duffing equation, as illustrated by [WigginsGarciaGarrido2022](@citet). The equation takes the form
 
 ```math
 \ddot x = x - x^3 + A\sin(\omega t).

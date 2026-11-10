@@ -1,5 +1,7 @@
-using Documenter
+using Documenter, DocumenterCitations
 using LagrangianDescriptors
+
+bib = CitationBibliography(joinpath(@__DIR__, "src", "refs.bib"); style = :authoryear)
 
 makedocs(
     sitename = "LagrangianDescriptors.jl",
@@ -12,6 +14,7 @@ makedocs(
             "Alternative via post-processing" => "postprocessing.md"
         ]
         "API" => "api.md"
+        "References" => "references.md"
     ],
     authors = "Ricardo Rosa",
     format = Documenter.HTML(;
@@ -20,6 +23,7 @@ makedocs(
         edit_link = "main",
     ),
     modules = [LagrangianDescriptors],
+    plugins = [bib],
 )
 
 if get(ENV, "CI", nothing) == "true" || get(ENV, "GITHUB_TOKEN", nothing) !== nothing

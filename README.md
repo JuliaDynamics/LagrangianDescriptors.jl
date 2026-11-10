@@ -61,9 +61,11 @@ And here is a painting of a *random* Duffing oscillator, detailed in the Tutoria
 
 ## References
 
-* [Painting the Phase Portrait of a Dynamical System with the Computational Tool of Lagrangian Descriptors](https://www.ams.org/journals/notices/202206/noti2489/noti2489.html?adat=June/July%202022&trk=2489&galt=none&cat=feature&pdfissue=202206&pdffile=rnoti-p936.pdf)
-* [Lagrangian descriptors: A method for revealing phase space structures of general time dependent dynamical systems](https://www.sciencedirect.com/science/article/abs/pii/S1007570413002037)
-* [Lagrangian Descriptors - *Discovery and Quantification of Phase Space Structure and Transport*](https://champsproject.github.io/lagrangian_descriptors/docs/authors.html)
-* [Frequently Asked Questions about Lagrangian Descriptors](https://acp.copernicus.org/preprints/acp-2016-633/acp-2016-633-SC2-supplement.pdf)
-* [Lagrangian Descriptors for Stochastic Differential Equations: A Tool for Revealing the Phase Portrait of Stochastic Dynamical Systems](https://doi.org/10.1142/S0218127416300366) (also on [arXiv:1705.11074](https://arxiv.org/abs/1705.11074))
-
+* J. A. Jiménez Madrid and A. M. Mancho, *Distinguished trajectories in time dependent vector fields*, Chaos **19**, 013111 (2009). [doi:10.1063/1.3056050](https://doi.org/10.1063/1.3056050)
+* A. M. Mancho, S. Wiggins, J. Curbelo and C. Mendoza, *Lagrangian descriptors: A method for revealing phase space structures of general time dependent dynamical systems*, Communications in Nonlinear Science and Numerical Simulation **18**, 3530–3557 (2013). [doi:10.1016/j.cnsns.2013.05.002](https://doi.org/10.1016/j.cnsns.2013.05.002)
+* F. Balibrea-Iniesta, C. Lopesino, S. Wiggins and A. M. Mancho, *Lagrangian Descriptors for Stochastic Differential Equations: A Tool for Revealing the Phase Portrait of Stochastic Dynamical Systems*, International Journal of Bifurcation and Chaos **26**, 1630036 (2016). [doi:10.1142/S0218127416300366](https://doi.org/10.1142/S0218127416300366)
+* A. M. Mancho, [*Frequently Asked Questions about Lagrangian Descriptors*](https://acp.copernicus.org/preprints/acp-2016-633/acp-2016-633-SC2-supplement.pdf), interactive comment in Atmospheric Chemistry and Physics Discussions (2016).
+* C. Lopesino, F. Balibrea-Iniesta, V. J. García-Garrido, S. Wiggins and A. M. Mancho, *A Theoretical Framework for Lagrangian Descriptors*, International Journal of Bifurcation and Chaos **27**, 1730001 (2017). [doi:10.1142/S0218127417300014](https://doi.org/10.1142/S0218127417300014)
+* M. Agaoglou, B. Aguilar-Sanjuan, V. J. García Garrido, F. González-Montoya, M. Katsanikas, V. Krajňák, S. Naik and S. Wiggins, [*Lagrangian Descriptors: Discovery and Quantification of Phase Space Structure and Transport*](https://champsproject.github.io/lagrangian_descriptors/), The CHAMPS Project (2020). [doi:10.5281/zenodo.3958985](https://doi.org/10.5281/zenodo.3958985)
+* V. J. García-Garrido and J. García-Luengo, *Painting the phase space of dissipative systems with Lagrangian descriptors*, Communications in Nonlinear Science and Numerical Simulation **104**, 106034 (2022). [doi:10.1016/j.cnsns.2021.106034](https://doi.org/10.1016/j.cnsns.2021.106034)
+* S. Wiggins and V. J. García-Garrido, *Painting the Phase Portrait of a Dynamical System with the Computational Tool of Lagrangian Descriptors*, Notices of the American Mathematical Society **69**(6) (2022). [doi:10.1090/noti2489](https://doi.org/10.1090/noti2489)

@@ -6,7 +6,7 @@ Painting the phase portrait of deterministic and stochastic systems.
 
 ## About
 
-The dynamics of evolutionary systems can be quite intricate. The method of **Lagrangian Descriptors** helps to visualize the complicated behavior of such systems and make sense of it. In a recent article, Wiggins and García-Garrido call it [a method for] *painting the phase portrait* (of a dynamical system) (see [S. Wiggins and V. J. García-Garrido, Painting the Phase Portrait of a Dynamical System with the Computational Tool of Lagrangian Descriptors (AMS Notices, June/July 2022)](https://www.ams.org/journals/notices/202206/noti2489/noti2489.html?adat=June/July%202022&trk=2489&galt=none&cat=feature&pdfissue=202206&pdffile=rnoti-p936.pdf).
+The dynamics of evolutionary systems can be quite intricate. The method of **Lagrangian Descriptors** helps to visualize the complicated behavior of such systems and make sense of it. In a recent article, [WigginsGarciaGarrido2022](@citet) call it [a method for] *painting the phase portrait* (of a dynamical system).
 
 The image above, for instance, shows the dynamics of a periodically-forced Duffing equation, with a particular combination of parameters and near time $t=0$.
 
@@ -126,7 +126,7 @@ More precisely, the implementation works as follows:
 
 The package is still in an embryonic phase and currently accepts differential equations of the type `ODEProblem`, `RODEProblem`, and `SDEProblem`. Other problems will come eventually.
 
-Besides the Lagrangian descriptors given by the time integral of an infinitesimal descriptor `M`, the package implements the descriptor given by the sum of the `p`-th powers of the increments of the solution over a time grid, introduced for stochastic equations by Balibrea-Iniesta, Lopesino, Wiggins and Mancho (see the References), via [`IncrementDescriptor`](@ref). For random and stochastic equations, the mean of the descriptors over many realizations of the noise is obtained with the keyword `realizations` of [`solve`](@ref LagrangianDescriptors.solve).
+Besides the Lagrangian descriptors given by the time integral of an infinitesimal descriptor `M`, the package implements the descriptor given by the sum of the `p`-th powers of the increments of the solution over a time grid, introduced for stochastic equations by [BalibreaIniestaEtAl2016](@citet), via [`IncrementDescriptor`](@ref). For random and stochastic equations, the mean of the descriptors over many realizations of the noise is obtained with the keyword `realizations` of [`solve`](@ref LagrangianDescriptors.solve).
 
 The solutions can be plotted with Plots.jl or with Makie.jl, as heatmaps for grids of initial conditions, as scatter plots for other collections of initial conditions, and as lines for scalar problems, and for any two components of higher-dimensional problems (see the API section on plotting).
 
@@ -139,13 +139,9 @@ What is currently missing:
 1. I don't know whether/how the idea applies to delay type equations, but we should check that out.
 1. Register the package.
 
-## References
+## Further reading
 
-* [Painting the Phase Portrait of a Dynamical System with the Computational Tool of Lagrangian Descriptors](https://www.ams.org/journals/notices/202206/noti2489/noti2489.html?adat=June/July%202022&trk=2489&galt=none&cat=feature&pdfissue=202206&pdffile=rnoti-p936.pdf)
-* [Lagrangian descriptors: A method for revealing phase space structures of general time dependent dynamical systems](https://www.sciencedirect.com/science/article/abs/pii/S1007570413002037)
-* [Lagrangian Descriptors - *Discovery and Quantification of Phase Space Structure and Transport*](https://champsproject.github.io/lagrangian_descriptors/docs/authors.html)
-* [Frequently Asked Questions about Lagrangian Descriptors](https://acp.copernicus.org/preprints/acp-2016-633/acp-2016-633-SC2-supplement.pdf)
-* [Lagrangian Descriptors for Stochastic Differential Equations: A Tool for Revealing the Phase Portrait of Stochastic Dynamical Systems](https://doi.org/10.1142/S0218127416300366) (also on [arXiv:1705.11074](https://arxiv.org/abs/1705.11074))
+The literature on the method of Lagrangian descriptors is listed in the [References](references.md).
 
 ## Developers
 

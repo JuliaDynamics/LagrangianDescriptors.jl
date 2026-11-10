@@ -318,9 +318,12 @@ end
         @test all(s -> s.retcode isa ReturnCode.T, lagsol.enssol.u)
 
         # Return codes: diverging backward trajectories that hit `maxiters` are flagged,
-        # even though they are not `terminated`
+        # even though they are not `terminated`. The solver warns about each of them;
+        # `@test_logs` checks that it does and keeps the warnings out of the test output.
         lagprob_bwd = LagrangianDescriptorProblem(prob, M, uu0[1, :]; direction=:backward)
-        lagsol_maxiters = solve(lagprob_bwd, Tsit5(); maxiters = 1000)
+        lagsol_maxiters = @test_logs (:warn, r"maxiters") match_mode = :any solve(
+            lagprob_bwd, Tsit5(); maxiters = 1000
+        )
         @test any(==(ReturnCode.MaxIters), lagsol_maxiters.retcodes)
         @test !all(successful_retcode, lagsol_maxiters.retcodes)
         @test !any(lagsol_maxiters.terminated)

@@ -6,7 +6,7 @@ Painting the phase portrait of deterministic and stochastic systems.
 
 ## About
 
-The dynamics of evolutionary systems can be quite intricate. The method of **Lagrangian Descriptors** helps to visualize the complicate behavior of such systems and make sense of it. In a recent article, Wiggins and and García-Garrido call it [a method for] *painting the phase portrait* (of a dynamical system) (see [S. Wiggins and V. J. García-Garrido, Painting the Phase Portrait of a Dynamical System with the Computational Tool of Lagrangian Descriptors (AMS Notices, June/July 2022)](https://www.ams.org/journals/notices/202206/noti2489/noti2489.html?adat=June/July%202022&trk=2489&galt=none&cat=feature&pdfissue=202206&pdffile=rnoti-p936.pdf).
+The dynamics of evolutionary systems can be quite intricate. The method of **Lagrangian Descriptors** helps to visualize the complicated behavior of such systems and make sense of it. In a recent article, Wiggins and García-Garrido call it [a method for] *painting the phase portrait* (of a dynamical system) (see [S. Wiggins and V. J. García-Garrido, Painting the Phase Portrait of a Dynamical System with the Computational Tool of Lagrangian Descriptors (AMS Notices, June/July 2022)](https://www.ams.org/journals/notices/202206/noti2489/noti2489.html?adat=June/July%202022&trk=2489&galt=none&cat=feature&pdfissue=202206&pdffile=rnoti-p936.pdf).
 
 The image above, for instance, shows the dynamics of a periodically-forced Duffing equation, with a particular combination of parameters and near time $t=0$.
 
@@ -14,7 +14,7 @@ The image above, for instance, shows the dynamics of a periodically-forced Duffi
 
 Here is the code that generates the background of the image above, displaying some dynamic features of the Duffing equation.
 
-```julia
+```@example index
 using OrdinaryDiffEq, Plots
 using LinearAlgebra: norm
 using LagrangianDescriptors
@@ -36,11 +36,16 @@ uu0 = [[x, y] for y in range(-1.5, -0.5, length=301), x in range(-0.4, 1.6, leng
 lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 
 lagsol = solve(lagprob, Tsit5())
+
+plot(lagsol)
+savefig("duffing_example.png"); nothing # hide
 ```
+
+![Lagrangian descriptors of the forced Duffing equation](duffing_example.png)
 
 ## Method
 
-The method is akin to droping colored ink in a fluid flow, tracking the dye as it is transported by the flow, and revealing the pattern created after a certain period of time. The difference being that the color doesn't get diffused as in a real fluid, so the image doesn't get blurred and one gets a clearer picture.
+The method is akin to dropping colored ink in a fluid flow, tracking the dye as it is transported by the flow, and revealing the pattern created after a certain period of time. The difference being that the color doesn't get diffused as in a real fluid, so the image doesn't get blurred and one gets a clearer picture.
 
 It is similar to drawing a phase portrait, which displays a collection of orbits, but in this method each orbit is painted according to its dynamic behavior, better revealing the overall picture.
 
@@ -58,7 +63,7 @@ If $t_f < t_0$, so that $u=u(t)$ is a "backward" solution from $t_0$, then we ob
 L_{\mathrm{bwd}} = \int_{t_f}^{t_0} M(t, u(t)) \;\mathrm{d}t = - \int_{t_0}^{t_f} M(t, u(t)) \;\mathrm{d}t.
 ```
 
-Since the system might be non-autonomous, these Lagragians descriptors are referred as descriptors **near ``t_0``**.
+Since the system might be non-autonomous, these Lagrangian descriptors are referred to as descriptors **near ``t_0``**.
 
 ## Approach
 
@@ -119,7 +124,7 @@ More precisely, the implementation works as follows:
 
 ## Current state
 
-The package is still in an embrionary phase and currently accepts differential equations of the type `ODEProblem`, `RODEProblem`, and `SDEProblem`. Other problems will come eventually.
+The package is still in an embryonic phase and currently accepts differential equations of the type `ODEProblem`, `RODEProblem`, and `SDEProblem`. Other problems will come eventually.
 
 Besides the Lagrangian descriptors given by the time integral of an infinitesimal descriptor `M`, the package implements the descriptor given by the sum of the `p`-th powers of the increments of the solution over a time grid, introduced for stochastic equations by Balibrea-Iniesta, Lopesino, Wiggins and Mancho (see the References), via [`IncrementDescriptor`](@ref). For random and stochastic equations, the mean of the descriptors over many realizations of the noise is obtained with the keyword `realizations` of [`solve`](@ref LagrangianDescriptors.solve).
 

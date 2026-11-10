@@ -10,7 +10,7 @@ Implementation of the method of **Lagrangian Descriptors** to highlight singular
 
 ### Periodically forced Duffing oscillator
 
-Here in an example on a periodically forced Duffing system.
+Here is an example on a periodically forced Duffing system.
 
 ```julia
 using OrdinaryDiffEq, Plots
@@ -42,7 +42,7 @@ With all setup, we may solve it as follows:
 
 ```
 julia> @time lagsol = solve(lagprob, Tsit5())
-  4.241800 seconds (204.88 M allocations: 9.173 GiB, 23.40% gc time, 24.99% compilation time)
+  1.592059 seconds (69.85 M allocations: 3.762 GiB, 21.25% gc time)
 ```
 
 Then we use the built-in plot recipe to get the heatmap of the Lagrangian descriptors:

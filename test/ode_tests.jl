@@ -267,6 +267,24 @@ end
         )
     end
 
+    @testset "Display" begin
+        f = function (u, p, t)
+            u - u^3
+        end
+        prob = ODEProblem(f, 0.5, (0.0, 1.0))
+        M = function (du, u, p, t)
+            norm(du)
+        end
+        lagprob = LagrangianDescriptorProblem(prob, M, [[x, y] for y in 1:2, x in 1:3]; direction = :forward)
+        @test sprint(show, MIME("text/plain"), lagprob) ==
+            "LagrangianDescriptorProblem for an ODEProblem\n  initial conditions: 6 (2 × 3) of type Vector{Int64}\n  direction: :forward"
+        @test sprint(show, lagprob) == "LagrangianDescriptorProblem(6 initial conditions, :forward)"
+        lagsol = solve(LagrangianDescriptorProblem(prob, M, range(-1, 1, length = 5)), Tsit5(); realizations = 2)
+        @test sprint(show, MIME("text/plain"), lagsol) ==
+            "LagrangianDescriptorSolution\n  initial conditions: 5 of type Float64\n  direction: :both\n  realizations: 2"
+        @test sprint(show, lagsol) == "LagrangianDescriptorSolution(5 initial conditions, :both)"
+    end
+
     @testset "Dissipative system with max_trajectory_value" begin
         # Damped Duffing oscillator - dissipative system where backward integration diverges
         function damped_duffing!(du, u, p, t)

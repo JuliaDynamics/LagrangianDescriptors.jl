@@ -1,6 +1,6 @@
 # Ordinary Differential Equations
 
-We considere, here, some examples of applying the Lagragian descriptor method to equations of the type `ODEProblem`.
+We consider, here, some examples of applying the Lagrangian descriptor method to equations of the type `ODEProblem`.
 
 ## Periodically-forced Duffing equation
 
@@ -23,7 +23,7 @@ The idea is to set up this system as an `ODEProblem` from [SciML/DifferentialEqu
 
 So we first load the relevant packages:
 
-```julia duffing
+```@example duffing
 using OrdinaryDiffEq, Plots
 using LinearAlgebra: norm
 using LagrangianDescriptors
@@ -31,7 +31,7 @@ using LagrangianDescriptors
 
 Next we set up the `ODEProblem`:
 
-```julia duffing
+```@example duffing
 function f!(du, u, p, t)
     x, y = u
     A, ω = p
@@ -48,7 +48,7 @@ prob = ODEProblem(f!, u0, tspan, p)
 
 With the ODE problem setup, we choose an infinitesimal Lagrangian descriptor, a collection of initial conditions on the phase space, which is the region to be "painted", and finally we build the `LagrangianDescriptorProblem`:
 
-```julia duffing
+```@example duffing
 M(du, u, p, t) = norm(du)
 
 uu0 = [[x, y] for y in range(-1.0, 1.0, length=301), x in range(-1.8, 1.8, length=301)]
@@ -58,38 +58,36 @@ lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 
 The Lagrangian descriptors are the time-integration of the infinitesimal descriptor along forward and backward solutions of the equation. They are integrated along with the solutions by "solving" the `LagrangianDescriptorProblem`, with an overload of the `solve` method from the [SciML](https://sciml.ai) ecosystem:
 
-```julia duffing
+```@example duffing
 lagsol = solve(lagprob, Tsit5())
 ```
 
 With the solution at hand, we plot the Lagrangian descriptors to visualize the dynamics of the system:
 
-```julia duffing
-plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation \$\\ddot x = x - x^3 + A\\sin(\\omega t)\$\nwith A=$A and ω=$ω", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
-
-savefig("img/duffing.png")
+```@example duffing
+plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation \$\\ddot x = x - x^3 + A\\sin(\\omega t)\$\nwith A=$A and ω=$(round(ω, digits=3))", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
+savefig("duffing.png"); nothing # hide
 ```
 
-![Duffing](img/duffing.png)
+![Lagrangian descriptors of the Duffing equation](duffing.png)
 
 We may zoom closer to the origin to find the following "painting":
 
-```julia duffing
+```@example duffing
 uu0 = [[x, y] for y in range(-0.6, 0.3, length=601), x in range(-0.2, 0.4, length=401)]
 lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 
 lagsol = solve(lagprob, Tsit5());
 
-plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation \$\\ddot x = x - x^3 + A\\sin(\\omega t)\$\nwith A=$A and ω=$ω", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
-
-savefig("img/duffing2.png")
+plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation \$\\ddot x = x - x^3 + A\\sin(\\omega t)\$\nwith A=$A and ω=$(round(ω, digits=3))", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
+savefig("duffing_zoom.png"); nothing # hide
 ```
 
-![Duffing](img/duffing2.png)
+![Lagrangian descriptors of the Duffing equation](duffing_zoom.png)
 
-If we want to change parameters, we just `remake` the original `ODEProblem` (in the future I should add the option to remake the `LagrangianDescriptorProblem` itself.)
+If we want to change parameters, we just `remake` the original `ODEProblem`:
 
-```julia
+```@example duffing
 A = 2.0; ω = 2π; p = (A, ω);
 prob = remake(prob, p=p)
 uu0 = [[x, y] for y in range(-0.6, -0.1, length=501), x in range(-0.2, 0.3, length=401)]
@@ -97,18 +95,17 @@ lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 
 lagsol = solve(lagprob, Tsit5());
 
-plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation \$\\ddot x = x - x^3 + A\\sin(\\omega t)\$\nwith A=$A and ω=$ω", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
-
-savefig("img/duffing3.png")
+plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation \$\\ddot x = x - x^3 + A\\sin(\\omega t)\$\nwith A=$A and ω=$(round(ω, digits=3))", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
+savefig("duffing_A2.png"); nothing # hide
 ```
 
-![Duffing](img/duffing3.png)
+![Lagrangian descriptors of the Duffing equation](duffing_A2.png)
 
 ## Autonomous Duffing equation
 
 For visualizing the autonomous case, we may rewrite the system or, since we already have the non-autonomous case implemented, we just set the amplitude of the forcing term to zero:
 
-```julia
+```@example duffing
 A = 0.0; ω = 2π; p = (A, ω);
 prob = remake(prob, p=p)
 uu0 = [[x, y] for y in range(-1.0, 1.0, length=301), x in range(-1.8, 1.8, length=301)]
@@ -116,12 +113,11 @@ lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 
 lagsol = solve(lagprob, Tsit5());
 
-plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation \$\\ddot x = x - x^3 + A\\sin(\\omega t)\$\nwith A=$A and ω=$ω", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
-
-savefig("img/duffing4.png")
+plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation \$\\ddot x = x - x^3 + A\\sin(\\omega t)\$\nwith A=$A and ω=$(round(ω, digits=3))", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
+savefig("duffing_autonomous.png"); nothing # hide
 ```
 
-![Duffing](img/duffing4.png)
+![Lagrangian descriptors of the Duffing equation](duffing_autonomous.png)
 
 ## A scalar cubic equation
 
@@ -131,21 +127,25 @@ Although one-dimensional problems are easier to understand, the method also work
    \frac{\mathrm{d}x}{\mathrm{d}t} = x - x^3
 ```
 
-This equation has two stationary solutions, associated with the fixed points $x=0$ and $x=1$.
+This equation has three stationary solutions, associated with the fixed points ``x=-1``, ``x=0`` and ``x=1``.
 
-We setup the `ODEProblem`:
+We set up the `ODEProblem`, loading the packages first:
 
-```julia
+```@example cubic
+using OrdinaryDiffEq, Plots
+using LinearAlgebra: norm
+using LagrangianDescriptors
+
 f(u, p, t) = u - u^3
 
 u0 = 0.5
 tspan = (0.0, 1.0)
-prob = ODEProblem(f, u0, tspan, p)
+prob = ODEProblem(f, u0, tspan)
 ```
 
 Build the `LagrangianDescriptorProblem`:
 
-```julia
+```@example cubic
 M(du, u, p, t) = norm(du)
 uu0 = range(-1.0, 1.0, length = 201)
 lagprob = LagrangianDescriptorProblem(prob, M, uu0)
@@ -153,13 +153,13 @@ lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 
 Solve it:
 
-```julia
+```@example cubic
 lagsol = solve(lagprob, Tsit5())
 ```
 
 and plot it:
 
-```julia
+```@example cubic
 plot(
     uu0,
     lagsol(:forward),
@@ -170,10 +170,9 @@ plot(
 plot!(uu0, lagsol(:backward), label = "backward")
 plot!(uu0, lagsol(), label = "total")
 plot!(uu0, lagsol(:difference), label = "difference")
-
-savefig("img/cubic.png")
+savefig("cubic.png"); nothing # hide
 ```
 
-In any of the Lagrangian descriptors (forward, backward, total, and difference) we distinguish the two fixed points.
+![Lagrangian descriptors of the cubic equation](cubic.png)
 
-![Cubic](img/cubic.png)
+In any of the Lagrangian descriptors (forward, backward, total, and difference) we distinguish the two fixed points.

@@ -69,3 +69,38 @@ function _mean_over_realizations(values, n)
     length(values) == n && return values
     return vec(sum(reshape(values, n, :), dims = 2)) / (length(values) ÷ n)
 end
+
+# Compact display, instead of the default one, which prints all initial conditions and
+# all trajectory outputs
+
+function Base.show(io::IO, ::MIME"text/plain", prob::LagrangianDescriptorProblem)
+    print(io, "LagrangianDescriptorProblem for a", _with_article(nameof(typeof(prob.ensprob.prob))))
+    print(io, "\n  initial conditions: ", _describe_collection(prob.uu0))
+    print(io, "\n  direction: :", prob.direction)
+end
+
+function Base.show(io::IO, ::MIME"text/plain", lagsol::LagrangianDescriptorSolution)
+    n = length(lagsol.uu0)
+    realizations = length(lagsol.retcodes) ÷ n
+    print(io, "LagrangianDescriptorSolution")
+    print(io, "\n  initial conditions: ", _describe_collection(lagsol.uu0))
+    print(io, "\n  direction: :", lagsol.direction)
+    realizations > 1 && print(io, "\n  realizations: ", realizations)
+    failed = count(!SciMLBase.successful_retcode, lagsol.retcodes)
+    failed > 0 && print(io, "\n  unsuccessful solves: ", failed, " (see `retcodes`)")
+    any(lagsol.terminated) &&
+        print(io, "\n  terminated by `max_trajectory_value`: ", count(lagsol.terminated))
+end
+
+Base.show(io::IO, prob::LagrangianDescriptorProblem) =
+    print(io, "LagrangianDescriptorProblem(", length(prob.uu0), " initial conditions, :", prob.direction, ")")
+Base.show(io::IO, lagsol::LagrangianDescriptorSolution) =
+    print(io, "LagrangianDescriptorSolution(", length(lagsol.uu0), " initial conditions, :", lagsol.direction, ")")
+
+_with_article(name) = (first(string(name)) in "AEIOU" ? "n " : " ") * string(name)
+
+function _describe_collection(uu0)
+    n = length(uu0)
+    shape = uu0 isa AbstractArray && ndims(uu0) > 1 ? " (" * join(size(uu0), " × ") * ")" : ""
+    return string(n, shape, " of type ", typeof(first(uu0)))
+end

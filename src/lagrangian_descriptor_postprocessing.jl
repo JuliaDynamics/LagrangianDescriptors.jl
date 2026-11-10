@@ -13,22 +13,28 @@ The time integration is done via `QuadGK.quadgk`.
 """
 function lagrangian_descriptor(sol::ODESolution, M)
     t0, tf = extrema(sol.prob.tspan)
-    if isinplace(sol.prob)
-        u = similar(sol.prob.u0)
-        du = similar(sol.prob.u0)
-        integrand = function (t)
-            sol(u, t) # interpolate in place
-            sol.prob.f(du, u, sol.prob.p, t)
-            return M(du, u, sol.prob.p, t)
-        end
-    else
-        integrand = function (t)
-            u = sol(t)
-            du = sol.prob.f(u, sol.prob.p, t)
-            return M(du, u, sol.prob.p, t)
-        end
-    end
+    integrand = isinplace(sol.prob) ? _inplace_integrand(sol, M) : _outofplace_integrand(sol, M)
     return first(quadgk(integrand, t0, tf))
+end
+
+# The integrands are built in separate functions, so that the closures do not share local
+# variables, which would be boxed and make them type unstable.
+function _inplace_integrand(sol, M)
+    u = similar(sol.prob.u0)
+    du = similar(sol.prob.u0)
+    return function (t)
+        sol(u, t) # interpolate in place
+        sol.prob.f(du, u, sol.prob.p, t)
+        return M(du, u, sol.prob.p, t)
+    end
+end
+
+function _outofplace_integrand(sol, M)
+    return function (t)
+        u = sol(t)
+        du = sol.prob.f(u, sol.prob.p, t)
+        return M(du, u, sol.prob.p, t)
+    end
 end
 
 """

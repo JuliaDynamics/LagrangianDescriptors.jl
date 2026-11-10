@@ -48,7 +48,7 @@ julia> @time lagsol = solve(lagprob, Tsit5())
 Then we use the built-in plot recipe to get the heatmap of the Lagrangian descriptors:
 
 ```julia
-plot(lagsol)
+plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation \$\\ddot x = x - x^3 + A\\sin(\\omega t)\$\nwith A=$A and ω=$(round(ω, digits=3))", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
 ```
 
 ![Duffing Lagrangian descriptor](docs/src/img/duffing.png)

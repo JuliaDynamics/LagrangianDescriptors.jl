@@ -14,6 +14,7 @@ include("increment_descriptor.jl")
 include("lagrangiandescriptor_solution.jl")
 include("solve.jl")
 include("lagrangian_descriptor_postprocessing.jl")
+include("plot_data.jl")
 include("plot_recipes.jl")
 
 end # module

@@ -115,7 +115,7 @@ More precisely, the implementation works as follows:
     1. `direction`: the direction chosen, which defaults to `:both`, but can be also `:forward` or `:backward`;
     1. `terminated`: which trajectories were stopped early by the keyword `max_trajectory_value` of `solve`;
     1. `retcodes`: the solver's return code of each trajectory, to detect trajectories that did not finish normally (e.g. with `.!SciMLBase.successful_retcode.(lagsol.retcodes)`).
-1. Finally, one can use `plot` to visualize either the forward, or the backward, or the sum (total), or even the difference, of the forward and backward Lagrangian descriptor, via a plot recipe for the `LagrangianDescriptorSolution`, i.e. by calling `plot(lagsol)` or `plot(lagsol, direction)`, where `direction` is either `:forward`, `:backward`, `:total` or `:difference`.
+1. Finally, one can use `plot` to visualize either the forward, or the backward, or the sum (total), or even the difference, of the forward and backward Lagrangian descriptor, via a plot recipe for the `LagrangianDescriptorSolution`, i.e. by calling `plot(lagsol)` or `plot(lagsol, direction)`, where `direction` is either `:forward`, `:backward`, `:total` or `:difference`, with either Plots.jl or Makie.jl.
 
 ## Current state
 
@@ -123,13 +123,12 @@ The package is still in an embrionary phase and currently accepts differential e
 
 Besides the Lagrangian descriptors given by the time integral of an infinitesimal descriptor `M`, the package implements the descriptor given by the sum of the `p`-th powers of the increments of the solution over a time grid, introduced for stochastic equations by Balibrea-Iniesta, Lopesino, Wiggins and Mancho (see the References), via [`IncrementDescriptor`](@ref). For random and stochastic equations, the mean of the descriptors over many realizations of the noise is obtained with the keyword `realizations` of [`solve`](@ref LagrangianDescriptors.solve).
 
-The plot recipe works for some types of collections of initial conditions (e.g. a `AbstractVector{<:Number}`, for scalar problems, and `AbstractMatrix{<:AbstractVector{<:Number}}` with the `AbstractVector` of length two, for two-dimensional problems). More general and flexible plot recipes will also be implemented.
+The solutions can be plotted with Plots.jl or with Makie.jl, as heatmaps for grids of initial conditions, as scatter plots for other collections of initial conditions, and as lines for scalar problems, and for any two components of higher-dimensional problems (see the API section on plotting).
 
 ## Roadmap
 
 What is currently missing:
 1. Support for other types of problems, such as mixed differential-algebraic equations, etc.;
-1. A more flexible plot recipe;
 1. Improve the documentation with more examples;
 1. Maybe an adaptive method to refine the set `uu0` of initial conditions!;
 1. I don't know whether/how the idea applies to delay type equations, but we should check that out.

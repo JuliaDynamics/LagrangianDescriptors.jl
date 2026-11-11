@@ -14,7 +14,7 @@ The double pendulum, with two equal masses on rods of equal length, in units whe
 with ``\Delta = \theta_1 - \theta_2``. Its phase space is four-dimensional, and we compute the Lagrangian descriptors on the slice of initial conditions at rest, ``\omega_1 = \omega_2 = 0``, in the components ``\theta_1`` and ``\theta_2``.
 
 ```@example doublependulum
-using LagrangianDescriptors, OrdinaryDiffEq, Plots
+using LagrangianDescriptors, OrdinaryDiffEq, CairoMakie
 using LinearAlgebra: norm
 
 function doublependulum!(du, u, p, t)
@@ -34,10 +34,9 @@ uu0 = [[θ1, θ2, 0.0, 0.0] for θ2 in range(-π, π, length = 301), θ1 in rang
 
 lagsol = solve(LagrangianDescriptorProblem(prob, M, uu0), Tsit5())
 
-plot(lagsol, xlabel = "θ₁", ylabel = "θ₂")
-savefig("doublependulum.png"); nothing # hide
+fig, ax, plt = heatmap(lagsol; axis = (xlabel = L"\theta_1", ylabel = L"\theta_2"))
+Colorbar(fig[1, 2], plt; label = "Lagrangian descriptor")
+fig
 ```
-
-![Lagrangian descriptors of the double pendulum, released at rest](doublependulum.png)
 
 Near the stable equilibrium at the origin, the motion is regular, made of small oscillations, and the descriptor varies smoothly. Released from larger angles, the double pendulum has enough energy for its rods to flip over, and the motion becomes chaotic, with intricate structures that become finer as the time window grows.

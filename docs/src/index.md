@@ -15,7 +15,7 @@ The image above, for instance, shows the dynamics of a periodically-forced Duffi
 Here is the code that generates the background of the image above, displaying some dynamic features of the Duffing equation.
 
 ```@example index
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEq, CairoMakie
 using LinearAlgebra: norm
 using LagrangianDescriptors
 
@@ -37,11 +37,10 @@ lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 
 lagsol = solve(lagprob, Tsit5())
 
-plot(lagsol)
-savefig("duffing_example.png"); nothing # hide
+fig, ax, plt = heatmap(lagsol; axis = (xlabel = L"x", ylabel = L"\dot{x}"))
+Colorbar(fig[1, 2], plt; label = "Lagrangian descriptor")
+fig
 ```
-
-![Lagrangian descriptors of the forced Duffing equation](duffing_example.png)
 
 ## Method
 

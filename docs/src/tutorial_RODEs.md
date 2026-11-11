@@ -18,7 +18,7 @@ So we first load the relevant packages:
 
 ```@example rode-duffing
 using StochasticDiffEq
-using Plots
+using CairoMakie
 using LinearAlgebra: norm
 using LagrangianDescriptors
 ```
@@ -58,8 +58,7 @@ lagsol = solve(lagprob, RandomHeun(), dt=1/100)
 With the solution at hand, we plot the Lagrangian descriptors to visualize the dynamics of the system:
 
 ```@example rode-duffing
-plot(lagsol, title="Lagrangian descriptors for the random Duffing equation \$\\ddot x = x - x^3 + a\\sin(W_t)\$\nwith \$a=\$$p", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
-savefig("duffing_random.png"); nothing # hide
+fig, ax, plt = heatmap(lagsol; axis = (title = "Random Duffing equation, a = $p", xlabel = L"x", ylabel = L"\dot{x}"))
+Colorbar(fig[1, 2], plt; label = "Lagrangian descriptor")
+fig
 ```
-
-![Lagrangian descriptors of the random Duffing equation](duffing_random.png)

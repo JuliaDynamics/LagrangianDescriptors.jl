@@ -1,9 +1,5 @@
 cd(@__DIR__)
 
-# Draw the figures of the examples without opening windows (GR's headless mode), unless set
-# otherwise; this must be set before the first plot
-ENV["GKSwstype"] = get(ENV, "GKSwstype", "100")
-
 using LagrangianDescriptors
 
 pages = [

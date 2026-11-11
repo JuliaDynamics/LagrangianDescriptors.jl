@@ -14,7 +14,7 @@ with ``\mu > 0``, has an unstable focus at the origin and an attracting limit cy
 The solutions that diverge backward in time need to be stopped, with the keyword `max_trajectory_value` of [`solve`](@ref LagrangianDescriptors.solve). The forward and backward solutions are stopped separately, so the forward descriptors are not affected:
 
 ```@example vanderpol
-using LagrangianDescriptors, OrdinaryDiffEq, Plots
+using LagrangianDescriptors, OrdinaryDiffEq, CairoMakie
 using LinearAlgebra: norm
 
 function vanderpol!(du, u, μ, t)
@@ -41,15 +41,13 @@ The descriptors of the stopped backward solutions only measure how fast they div
 Lbwd = lagsol(:backward)
 Lbwd[lagsol.terminated_backward] .= NaN
 
-plot(
-    plot(lagsol, :forward, title = "forward"),
-    heatmap(xs, ys, reshape(Lbwd, size(uu0)), title = "backward, without the diverging solutions"),
-    layout = (1, 2), size = (900, 360), margin = 4Plots.mm, titlefont = 10,
-    colorbar = false, xlabel = "x", ylabel = "y",
-)
-savefig("vanderpol.png"); nothing # hide
+fig = Figure(size = (1000, 400))
+ax = Axis(fig[1, 1]; title = "forward", xlabel = "x", ylabel = "y")
+heatmap!(ax, lagsol, :forward)
+ax = Axis(fig[1, 2]; title = "backward, bounded solutions", xlabel = "x", ylabel = "y")
+# Makie's `heatmap(xs, ys, z)` has `z[i, j]` at `(xs[i], ys[j])`, hence the `permutedims`
+heatmap!(ax, xs, ys, permutedims(reshape(Lbwd, size(uu0))))
+fig
 ```
-
-![Lagrangian descriptors of the van der Pol oscillator](vanderpol.png)
 
 Forward in time, all solutions approach the limit cycle, and the descriptor only shows the unstable focus at the origin. Backward in time, the limit cycle is repelling, and it appears as the boundary of the region of solutions that remain bounded.

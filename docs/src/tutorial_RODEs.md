@@ -12,34 +12,31 @@ We consider, first, the random Duffing equation
 
 where ``\{W_t\}_t`` is a standard Wiener process.
 
-With `LagrangianDescriptors.jl`, we i) start by setting up the equation as a `RODEProblem`; next, we ii) wrap that as a `LagrangianDescriptorProblem`; then we iii) `solve` it; and finally, we iv) plot the result with the built-in plot recipe. Each initial condition is solved with its own realization of the noise.
+With `LagrangianDescriptors.jl`, we i) start by setting up the equation as a `RODEProblem`; next, we ii) wrap that as a `LagrangianDescriptorProblem`; then we iii) `solve` it; and finally, we iv) plot the result with the built-in plot recipe. Each initial condition is solved with its own realization of the noise, and the forward and backward directions are driven by independent noise, as for a two-sided Wiener process.
 
 So we first load the relevant packages:
 
 ```@example rode-duffing
-using StochasticDiffEq, DiffEqNoiseProcess
+using StochasticDiffEq
 using Plots
-using Random: seed!
 using LinearAlgebra: norm
 using LagrangianDescriptors
 ```
 
-Next we set up the `RODEProblem`:
+Next we set up the `RODEProblem`, with the default noise, a standard Wiener process, here with a single component, given by `rand_prototype`, and a `seed` for reproducible results:
 
 ```@example rode-duffing
 function f!(du, u, p, t, W)
     x, y = u
     du[1] = y
-    du[2] = x - x^3 + p * sin(W)
+    du[2] = x - x^3 + p * sin(W[1])
 end
 
 p = 0.025
 u0 = [0.5, 2.2]
 tspan = (0.0, 8.0)
-seed!(123) # for a reproducible noise path
-W = WienerProcess(0.0, 0.0)
 
-prob = RODEProblem(f!, u0, tspan, p, noise=W)
+prob = RODEProblem(f!, u0, tspan, p; rand_prototype = [0.0], seed = 123)
 ```
 
 With the RODE problem setup, we choose an infinitesimal Lagrangian descriptor, a collection of initial conditions on the phase space, which is the region to be "painted", and finally we build the `LagrangianDescriptorProblem`:

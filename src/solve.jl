@@ -26,12 +26,11 @@ number of trajectories is set from `prob.uu0` and `realizations`.
   gives the mean of the Lagrangian descriptors over the realizations, as in Balibrea-Iniesta,
   Lopesino, Wiggins and Mancho (2016). The return codes and the `terminated` flags of the
   solution are kept for each of the `realizations * length(prob.uu0)` solves.
-- `shared_noise::Bool = false`: for an `SDEProblem`, whether all initial conditions of a
-  realization share the same noise path, as in the definition of the Lagrangian descriptors of
-  stochastic equations of Balibrea-Iniesta, Lopesino, Wiggins and Mancho (2016), for a fixed
-  realization of the noise. By default, each initial condition has independent noise. If the
-  `SDEProblem` has a `seed`, the noise is reproducible in both cases. Shared noise is only
-  supported for `SDEProblem`s.
+- `shared_noise::Bool = false`: for an `SDEProblem` or a `RODEProblem`, whether all initial
+  conditions of a realization share the same noise path, as in the definition of the
+  Lagrangian descriptors of stochastic equations of Balibrea-Iniesta, Lopesino, Wiggins and
+  Mancho (2016), for a fixed realization of the noise. By default, each initial condition has
+  independent noise. If the problem has a `seed`, the noise is reproducible in both cases.
 
 ## Examples
 

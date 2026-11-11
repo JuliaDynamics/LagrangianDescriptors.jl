@@ -4,6 +4,9 @@ using QuadGK, Test
 using SciMLBase: EnsembleSerial, remake
 using LagrangianDescriptors: augmentprob
 using LinearAlgebra: norm
+using Statistics: cor
+using DiffEqNoiseProcess: WienerProcess
+using SciMLBase: EnsembleProblem
 
 @testset "Augmented RODE" begin
     @testset "Linear OOP" begin
@@ -27,7 +30,8 @@ using LinearAlgebra: norm
         @test augsol.u[begin].fwd == augsol.u[begin].bwd == u0
         @test augsol.t ≈ augsol.W.t
         @test augsol.u[end].lfwd ≈ sum(M.(f.(getindex.(augsol.u, :fwd), p, augsol.t, first.(augsol.W.u)), getindex.(augsol.u, :fwd), p, augsol.t, first.(augsol.W.u))[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
-        @test augsol.u[end].lbwd ≈ sum(M.(f.(getindex.(augsol.u, :bwd), p, augsol.t, first.(augsol.W.u)), getindex.(augsol.u, :bwd), p, augsol.t, first.(augsol.W.u))[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
+        # the backward direction has its own noise, the last entry of the augmented noise
+        @test augsol.u[end].lbwd ≈ sum(M.(f.(getindex.(augsol.u, :bwd), p, augsol.t, last.(augsol.W.u)), getindex.(augsol.u, :bwd), p, augsol.t, last.(augsol.W.u))[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
         @test augsol.u[begin].lfwd ≈ 0.0
         @test augsol.u[begin].lbwd ≈ 0.0
 
@@ -43,7 +47,8 @@ using LinearAlgebra: norm
         @test length(augsol.u[begin]) == 2
         @test augsol.u[begin].bwd == u0
         @test augsol.u[begin].lbwd ≈ 0.0
-        @test augsol.u[end].lbwd ≈ sum(M.(f.(getindex.(augsol.u, :bwd), p, augsol.t, first.(augsol.W.u)), getindex.(augsol.u, :bwd), p, augsol.t, first.(augsol.W.u))[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
+        # the backward direction has its own noise, the last entry of the augmented noise
+        @test augsol.u[end].lbwd ≈ sum(M.(f.(getindex.(augsol.u, :bwd), p, augsol.t, last.(augsol.W.u)), getindex.(augsol.u, :bwd), p, augsol.t, last.(augsol.W.u))[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
 
         @test_throws ArgumentError augmentprob(prob, M; direction = :blah)
     end
@@ -78,8 +83,11 @@ using LinearAlgebra: norm
         @test augsol.u[begin].lfwd == augsol.u[begin].lbwd == 0.0
         @test all(≥(0.9), augsol.u[end].fwd)
         @test all(≤(0.1), augsol.u[end].bwd)
-        @test augsol.u[end].lfwd ≈ sum(M.(f.(getindex.(augsol.u, :fwd)) .+ p .* augsol.W.u, getindex.(augsol.u, :fwd), p, augsol.t, augsol.W.u)[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
-        @test augsol.u[end].lbwd ≈ sum(M.(f.(getindex.(augsol.u, :bwd)) .+ p .* augsol.W.u, getindex.(augsol.u, :bwd), p, augsol.t, augsol.W.u)[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
+        # each direction has its own noise: the first `n` entries forward, the last `n` backward
+        Wfwd = [W[1:n] for W in augsol.W.u]
+        Wbwd = [W[n+1:2n] for W in augsol.W.u]
+        @test augsol.u[end].lfwd ≈ sum(M.(f.(getindex.(augsol.u, :fwd)) .+ p .* Wfwd, getindex.(augsol.u, :fwd), p, augsol.t, Wfwd)[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
+        @test augsol.u[end].lbwd ≈ sum(M.(f.(getindex.(augsol.u, :bwd)) .+ p .* Wbwd, getindex.(augsol.u, :bwd), p, augsol.t, Wbwd)[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
     end
 
     @testset "Default noise" begin
@@ -104,7 +112,8 @@ using LinearAlgebra: norm
         for direction in (:both, :forward, :backward)
             augsol = @test_nowarn solve(augmentprob(prob, Mscalar; direction), RandomHeun(), dt = 1 / 100)
             @test first(augsol.W.t) == t0
-            @test length(augsol.W.u[end]) == 1
+            # a copy of the noise for each direction
+            @test length(augsol.W.u[end]) == (direction == :both ? 2 : 1)
         end
         lagsol = solve(LagrangianDescriptorProblem(prob, Mscalar, range(-1, 1, length = 5)), RandomHeun(), dt = 1 / 100)
         @test all(isfinite, lagsol())
@@ -119,8 +128,33 @@ using LinearAlgebra: norm
         for direction in (:both, :forward, :backward)
             augsol = @test_nowarn solve(augmentprob(prob, M; direction), RandomHeun(), dt = 1 / 100)
             @test first(augsol.W.t) == t0
-            @test size(augsol.W.u[end]) == size(sol.W.u[end]) == (n,)
+            @test size(sol.W.u[end]) == (n,)
+            # a copy of the noise for each direction
+            @test size(augsol.W.u[end]) == (direction == :both ? (2n,) : (n,))
         end
+    end
+
+    @testset "Independent backward noise" begin
+        # u' = W: the forward solution is the integral of the forward noise, and the backward
+        # solution is minus the integral of the backward noise
+        M = function (du, u, p, t, W)
+            abs(du)
+        end
+        endpoints(prob, trajectories) = solve(
+            EnsembleProblem(augmentprob(prob, M); output_func = (sol, i) -> (sol.u[end], false)),
+            RandomHeun(), EnsembleSerial(); trajectories, dt = 1 / 100,
+        ).u
+
+        # default noise: independent noise for each direction, so the endpoints are uncorrelated
+        prob = RODEProblem((u, p, t, W) -> W, 0.0, (0.0, 1.0))
+        ends = endpoints(prob, 2000)
+        @test abs(cor([u.fwd for u in ends], [u.bwd for u in ends])) < 0.1
+
+        # a given noise process: both directions use it, so the backward solution is minus
+        # the forward one, with the same descriptor
+        prob = RODEProblem((u, p, t, W) -> W, 0.0, (0.0, 1.0); noise = WienerProcess(0.0, 0.0))
+        ends = endpoints(prob, 20)
+        @test all(u -> u.bwd ≈ -u.fwd && u.lbwd ≈ u.lfwd, ends)
     end
 end
 

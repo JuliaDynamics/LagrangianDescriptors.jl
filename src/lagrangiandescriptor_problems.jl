@@ -27,8 +27,9 @@ function _ensemble_setup(prob, M, direction::Symbol, vmax)
 end
 
 # Seeds of the noise of each trajectory `i`, or `nothing` to leave them to the solver, which
-# then gives independent noise to each trajectory. Only `SDEProblem`s use a seed for their noise.
-_problem_seed(prob::SDEProblem) = prob.seed
+# then gives independent noise to each trajectory. `SDEProblem`s and `RODEProblem`s use a seed
+# for their noise.
+_problem_seed(prob::Union{SDEProblem,RODEProblem}) = prob.seed
 _problem_seed(prob) = zero(UInt64)
 
 function _derived_seed(base, k)
@@ -39,8 +40,8 @@ end
 function _seed_function(prob, n::Integer, shared_noise::Bool)
     base = _problem_seed(prob)
     if shared_noise
-        prob isa SDEProblem || throw(
-            ArgumentError("`shared_noise = true` is only supported for `SDEProblem`s."),
+        prob isa Union{SDEProblem,RODEProblem} || throw(
+            ArgumentError("`shared_noise = true` is only supported for `SDEProblem`s and `RODEProblem`s."),
         )
         b = iszero(base) ? rand(UInt64) : base
         # the same seed for all initial conditions of each realization

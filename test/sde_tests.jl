@@ -284,11 +284,21 @@ end
     @test solve(LagrangianDescriptorProblem(prob, d, uu0), EM(), dt = 0.01; shared_noise = true)() !=
         solve(LagrangianDescriptorProblem(prob, d, uu0), EM(), dt = 0.01; shared_noise = true)()
 
-    # shared noise is only supported for SDE problems
+    # RODE problems: u' = W, with the default noise or a given noise process
+    MW = function (du, u, p, t, W)
+        abs(du)
+    end
+    for rprob in (RODEProblem((u, p, t, W) -> W, 0.0, (0.0, 1.0)),
+                  RODEProblem((u, p, t, W) -> W, 0.0, (0.0, 1.0); noise = WienerProcess(0.0, 0.0)))
+        lagprob = LagrangianDescriptorProblem(rprob, MW, uu0)
+        @test !allsame(solve(lagprob, RandomHeun(), EnsembleSerial(), dt = 0.01)(:forward))
+        sol = solve(lagprob, RandomHeun(), EnsembleSerial(), dt = 0.01; shared_noise = true)
+        @test allsame(sol(:forward)) && allsame(sol(:backward))
+    end
+
+    # shared noise is not defined for ODE problems
     M = function (du, u, p, t)
         abs(du)
     end
     @test_throws ArgumentError solve(LagrangianDescriptorProblem(ODEProblem((u, p, t) -> u, 1.0, (0.0, 1.0)), M, uu0), Tsit5(); shared_noise = true)
-    rprob = RODEProblem((u, p, t, W) -> W, 0.0, (0.0, 1.0))
-    @test_throws ArgumentError solve(LagrangianDescriptorProblem(rprob, (du, u, p, t, W) -> abs(du), uu0), RandomHeun(), dt = 0.01; shared_noise = true)
 end

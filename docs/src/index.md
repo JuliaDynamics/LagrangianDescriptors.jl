@@ -126,7 +126,7 @@ More precisely, the implementation works as follows:
 
 The package is still in an embryonic phase and currently accepts differential equations of the type `ODEProblem`, `RODEProblem`, and `SDEProblem`. Other problems will come eventually.
 
-Besides the Lagrangian descriptors given by the time integral of an infinitesimal descriptor `M`, the package implements the descriptor given by the sum of the `p`-th powers of the increments of the solution over a time grid, introduced for stochastic equations by [BalibreaIniestaEtAl2016](@citet), via [`IncrementDescriptor`](@ref). For random and stochastic equations, the mean of the descriptors over many realizations of the noise is obtained with the keyword `realizations` of [`solve`](@ref LagrangianDescriptors.solve), and, for stochastic equations, the keyword `shared_noise` gives the same noise path to all initial conditions.
+Besides the Lagrangian descriptors given by the time integral of an infinitesimal descriptor `M`, the package implements the descriptor given by the sum of the `p`-th powers of the increments of the solution over a time grid, introduced for stochastic equations by [BalibreaIniestaEtAl2016](@citet), via [`IncrementDescriptor`](@ref). For random and stochastic equations, the mean of the descriptors over many realizations of the noise is obtained with the keyword `realizations` of [`solve`](@ref LagrangianDescriptors.solve), and the keyword `shared_noise` gives the same noise path to all initial conditions.
 
 The solutions can be plotted with Plots.jl or with Makie.jl, as heatmaps for grids of initial conditions, as scatter plots for other collections of initial conditions, and as lines for scalar problems, and for any two components of higher-dimensional problems (see the API section on plotting).
 
@@ -134,7 +134,7 @@ The solutions can be plotted with Plots.jl or with Makie.jl, as heatmaps for gri
 
 What is currently missing:
 1. Support for other types of problems, such as mixed differential-algebraic equations, etc.;
-1. Improve the documentation with more examples;
+1. Independent copies of a given noise process for the backward direction of random equations: for a `RODEProblem` with the default Wiener noise, the forward and backward directions are driven by independent copies of the noise, as for a two-sided Wiener process, but for a `RODEProblem` with a given `noise` process, an independent copy of the process is not available in general, so both directions are currently driven by the same process, at the forward time;
 1. Maybe an adaptive method to refine the set `uu0` of initial conditions!;
 1. I don't know whether/how the idea applies to delay type equations, but we should check that out.
 1. Register the package.

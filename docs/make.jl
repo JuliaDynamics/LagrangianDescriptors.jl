@@ -4,6 +4,7 @@ using LagrangianDescriptors
 
 pages = [
     "Overview" => "index.md",
+    "The method of Lagrangian descriptors" => "method.md",
     "Choosing the descriptor and the time window" => "choosing.md",
     "Tutorials" => [
         "ODEs" => "tutorial_ODEs.md",
@@ -39,6 +40,8 @@ bib = CitationBibliography(joinpath(@__DIR__, "src", "refs.bib"); style = :autho
 build_docs_with_style(
     pages, LagrangianDescriptors;
     bib,
+    # the stable documentation only exists after the first release
+    linkcheck_ignore = [r"^https://juliadynamics\.github\.io/LagrangianDescriptors\.jl/stable/?$"],
     authors = "Ricardo Rosa",
     htmlkw = (
         canonical = "https://juliadynamics.github.io/LagrangianDescriptors.jl/stable/",

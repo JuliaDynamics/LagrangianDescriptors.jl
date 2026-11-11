@@ -7,6 +7,9 @@
 #
 # An optional argument gives another path for the image.
 
+# Draw the figure without opening a window (GR's headless mode), unless set otherwise
+ENV["GKSwstype"] = get(ENV, "GKSwstype", "100")
+
 using OrdinaryDiffEq, Plots
 using LinearAlgebra: norm
 using LagrangianDescriptors

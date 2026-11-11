@@ -187,7 +187,8 @@ end
     # stopping diverging trajectories
     lagsol = solve(LagrangianDescriptorProblem(remake(prob, tspan = (0.0, 10.0)), M, uu0), SOSRI(); max_trajectory_value = 10.0)
     @test any(lagsol.terminated)
-    @test lagsol.terminated == (lagsol.retcodes .== ReturnCode.Terminated)
+    @test lagsol.terminated == lagsol.terminated_forward .| lagsol.terminated_backward
+    @test all(==(ReturnCode.Success), lagsol.retcodes)
 
     @test_throws ArgumentError LagrangianDescriptorProblem(prob, M, uu0; direction = :blah)
 end
@@ -216,4 +217,78 @@ end
     sdesol = solve(SDEProblem(f!, g2!, u0, tspan), EM(), dt = 1 / 1000)
     @test isfinite(lagrangian_descriptor(sdesol, M))
     @test lagrangian_descriptor(sdesol, M) > 0
+end
+
+@testset "Stopping SDE solutions" begin
+    M = function (du, u, p, t)
+        norm(du)
+    end
+    # dX = -X dt + σ dW decays forward and grows backward in time
+    for (g, kw) in (((u, p, t) -> 0.05 .* one.(u), (;)), ((u, p, t) -> fill(0.05, 1, 1), (; noise_rate_prototype = zeros(1, 1))))
+        prob = SDEProblem((u, p, t) -> -u, g, [1.0], (0.0, 5.0); kw...)
+        uu0 = [[x] for x in range(0.5, 2.0, length = 7)]
+        stopped = solve(LagrangianDescriptorProblem(prob, M, uu0), EM(), dt = 0.01; max_trajectory_value = 5.0, shared_noise = true)
+        free = solve(LagrangianDescriptorProblem(prob, M, uu0), EM(), dt = 0.01; shared_noise = true)
+        @test all(stopped.terminated_backward) && !any(stopped.terminated_forward)
+        @test all(stopped(:backward) .< free(:backward))
+        @test all(isfinite, stopped())
+    end
+end
+
+@testset "Stopping with other descriptors and problems" begin
+    # increment descriptor
+    prob = ODEProblem((u, p, t) -> u, 1.0, (0.0, 5.0))
+    sol = solve(LagrangianDescriptorProblem(prob, IncrementDescriptor(Δt = 0.01, p = 1), [0.5, 1.0]), Tsit5(); max_trajectory_value = 10.0)
+    @test all(sol.terminated_forward) && !any(sol.terminated_backward)
+    @test all(10 .- [0.5, 1.0] .<= sol(:forward) .<= 10.5 .- [0.5, 1.0])
+    # RODE
+    rprob = RODEProblem((u, p, t, W) -> u + 0.01W, 1.0, (0.0, 5.0))
+    sol = solve(LagrangianDescriptorProblem(rprob, (du, u, p, t, W) -> abs(du), [0.5, 1.0]), RandomHeun(), dt = 0.01; max_trajectory_value = 10.0)
+    @test all(sol.terminated_forward) && !any(sol.terminated_backward)
+    @test all(10 .- [0.5, 1.0] .<= sol(:forward) .<= 10.5 .- [0.5, 1.0])
+end
+
+@testset "Shared noise" begin
+    # dX = dW: with p = 1, the increment descriptor is the sum of |ΔW| over the grid, which is
+    # the same for all initial conditions if and only if they share the noise path
+    prob = SDEProblem((u, p, t) -> 0.0, (u, p, t) -> 1.0, 0.0, (0.0, 1.0))
+    d = IncrementDescriptor(Δt = 0.01, p = 1)
+    uu0 = [0.0, 1.0, 2.0, 3.0]
+    allsame(v) = all(≈(first(v)), v)
+
+    # independent noise by default
+    sol = solve(LagrangianDescriptorProblem(prob, d, uu0), EM(), dt = 0.01)
+    @test !allsame(sol(:forward))
+    @test !allsame(sol(:backward))
+
+    # shared noise: the same path for all initial conditions, different in each realization
+    sol = solve(LagrangianDescriptorProblem(prob, d, uu0), EM(), dt = 0.01; shared_noise = true, realizations = 3)
+    values = reshape(getindex.(sol.enssol.u, :lfwd), length(uu0), 3)
+    @test all(allsame, eachcol(values))
+    @test !allsame(values[1, :])
+    # the forward and backward paths are independent
+    @test !(getindex.(sol.enssol.u, :lfwd) ≈ getindex.(sol.enssol.u, :lbwd))
+
+    # with a seed in the problem, the noise is reproducible, independent or shared
+    seeded = remake(prob, seed = 123)
+    lagprob = LagrangianDescriptorProblem(seeded, d, uu0)
+    sol1 = solve(lagprob, EM(), dt = 0.01)
+    sol2 = solve(lagprob, EM(), dt = 0.01)
+    @test sol1() == sol2()
+    @test !allsame(sol1(:forward))
+    shared1 = solve(lagprob, EM(), dt = 0.01; shared_noise = true)
+    shared2 = solve(lagprob, EM(), dt = 0.01; shared_noise = true)
+    @test shared1() == shared2()
+    @test allsame(shared1(:forward))
+    # without a seed, shared noise changes from one solve to the next
+    @test solve(LagrangianDescriptorProblem(prob, d, uu0), EM(), dt = 0.01; shared_noise = true)() !=
+        solve(LagrangianDescriptorProblem(prob, d, uu0), EM(), dt = 0.01; shared_noise = true)()
+
+    # shared noise is only supported for SDE problems
+    M = function (du, u, p, t)
+        abs(du)
+    end
+    @test_throws ArgumentError solve(LagrangianDescriptorProblem(ODEProblem((u, p, t) -> u, 1.0, (0.0, 1.0)), M, uu0), Tsit5(); shared_noise = true)
+    rprob = RODEProblem((u, p, t, W) -> W, 0.0, (0.0, 1.0))
+    @test_throws ArgumentError solve(LagrangianDescriptorProblem(rprob, (du, u, p, t, W) -> abs(du), uu0), RandomHeun(), dt = 0.01; shared_noise = true)
 end

@@ -11,7 +11,7 @@ The van der Pol oscillator
 
 with ``\mu > 0``, has an unstable focus at the origin and an attracting limit cycle. Forward in time, all solutions approach the limit cycle. Backward in time, the solutions inside the limit cycle approach the origin, while those outside grow without bound.
 
-The solutions that diverge backward in time need to be stopped, with the keyword `max_trajectory_value` of [`solve`](@ref LagrangianDescriptors.solve). When a problem has both directions, a solution is stopped as soon as either its forward or its backward part exceeds the given value, which also stops the other part. So here we solve the two directions separately, and only stop the backward solutions:
+The solutions that diverge backward in time need to be stopped, with the keyword `max_trajectory_value` of [`solve`](@ref LagrangianDescriptors.solve). The forward and backward solutions are stopped separately, so the forward descriptors are not affected:
 
 ```@example vanderpol
 using LagrangianDescriptors, OrdinaryDiffEq, Plots
@@ -30,21 +30,19 @@ xs = range(-3, 3, length = 201)
 ys = range(-4, 4, length = 201)
 uu0 = [[x, y] for y in ys, x in xs]
 
-forward = solve(LagrangianDescriptorProblem(prob, M, uu0; direction = :forward), Tsit5())
-backward = solve(LagrangianDescriptorProblem(prob, M, uu0; direction = :backward), Tsit5();
-    max_trajectory_value = 10.0)
+lagsol = solve(LagrangianDescriptorProblem(prob, M, uu0), Tsit5(); max_trajectory_value = 10.0)
 
-count(backward.terminated)
+count(lagsol.terminated_forward), count(lagsol.terminated_backward)
 ```
 
-The descriptors of the stopped solutions only measure how fast they diverge, so we leave them out of the backward picture, setting them to `NaN`:
+The descriptors of the stopped backward solutions only measure how fast they diverge, so we leave them out of the backward picture, setting them to `NaN`:
 
 ```@example vanderpol
-Lbwd = backward(:backward)
-Lbwd[backward.terminated] .= NaN
+Lbwd = lagsol(:backward)
+Lbwd[lagsol.terminated_backward] .= NaN
 
 plot(
-    plot(forward, title = "forward"),
+    plot(lagsol, :forward, title = "forward"),
     heatmap(xs, ys, reshape(Lbwd, size(uu0)), title = "backward, without the diverging solutions"),
     layout = (1, 2), size = (900, 360), margin = 4Plots.mm, titlefont = 10,
     colorbar = false, xlabel = "x", ylabel = "y",

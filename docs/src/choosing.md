@@ -98,9 +98,7 @@ For a non-autonomous system, the descriptors are those at the initial time ``t_0
 
 ## Diverging solutions
 
-For some systems, such as dissipative systems backward in time, or systems in which solutions can escape to infinity, some solutions grow very large within the time window. Their descriptors then dominate the color scale, and the solver may take many small steps or fail. The keyword `max_trajectory_value` of [`solve`](@ref LagrangianDescriptors.solve) stops each solution once one of its components exceeds the given value, keeping the descriptor accumulated up to then.
-
-When a problem has both directions, the forward and backward solutions are computed together, so stopping a solution that diverges backward also stops its forward part, and its forward descriptor is then incomplete. If the solutions only diverge in one direction, it is better to solve each direction separately, and to only stop the diverging one. With damping, for instance, the solutions decay forward in time, but grow backward in time:
+For some systems, such as dissipative systems backward in time, or systems in which solutions can escape to infinity, some solutions grow very large within the time window. Their descriptors then dominate the color scale, and the solver may take many small steps or fail. The keyword `max_trajectory_value` of [`solve`](@ref LagrangianDescriptors.solve) stops the forward and the backward solutions, separately, once one of their components exceeds the given value, keeping the descriptor accumulated up to then. With damping, for instance, the solutions decay forward in time, but some of them grow backward in time:
 
 ```@example choosing
 function damped_duffing!(du, u, p, t)
@@ -109,28 +107,35 @@ function damped_duffing!(du, u, p, t)
 end
 
 prob_damped = ODEProblem(damped_duffing!, [0.0, 0.0], (0.0, 8.0))
-lagsol_fwd = solve(LagrangianDescriptorProblem(prob_damped, M, uu0; direction = :forward), Tsit5())
-lagsol_bwd = solve(LagrangianDescriptorProblem(prob_damped, M, uu0; direction = :backward), Tsit5();
-    max_trajectory_value = 10.0)
+lagsol_damped = solve(LagrangianDescriptorProblem(prob_damped, M, uu0), Tsit5(); max_trajectory_value = 10.0)
+```
+
+The numbers of forward and backward solutions stopped early are
+
+```@example choosing
+count(lagsol_damped.terminated_forward), count(lagsol_damped.terminated_backward)
+```
+
+The descriptors of the stopped solutions only measure how fast they diverge, so it may be clearer to leave them out of the picture, setting them to `NaN`:
+
+```@example choosing
+xs = range(-1.8, 1.8, length = 201)
+ys = range(-1.0, 1.0, length = 201)
+Lbwd = lagsol_damped(:backward)
+Lbwd[lagsol_damped.terminated_backward] .= NaN
 
 plot(
-    plot(lagsol_fwd, title = "forward"),
-    plot(lagsol_bwd, title = "backward"),
+    plot(lagsol_damped, :forward, title = "forward"),
+    heatmap(xs, ys, reshape(Lbwd, size(uu0)), title = "backward, without the diverging solutions"),
     layout = (1, 2), size = (900, 360), margin = 4Plots.mm, titlefont = 10, colorbar = false,
     xlabel = "x", ylabel = "y",
 )
 savefig("damped.png"); nothing # hide
 ```
 
-![Forward and backward Lagrangian descriptors of the damped Duffing equation, with diverging solutions stopped](damped.png)
+![Forward and backward Lagrangian descriptors of the damped Duffing equation, without the solutions that diverge backward](damped.png)
 
-The number of backward solutions stopped early is
-
-```@example choosing
-count(lagsol_bwd.terminated)
-```
-
-Their descriptors only measure how fast they diverge, so it may be clearer to leave them out of the picture, as in the [van der Pol](examples/vanderpol.md) example. More generally, the return codes in `lagsol.retcodes` tell which solutions did not finish normally, e.g. because they reached the maximum number of steps; their descriptors are not reliable. See [GarciaGarridoGarciaLuengo2022](@citet) for more on dissipative systems.
+More generally, the return codes in `lagsol.retcodes` tell which solutions did not finish normally, e.g. because they reached the maximum number of steps; their descriptors are not reliable. See [GarciaGarridoGarciaLuengo2022](@citet) for more on dissipative systems.
 
 ## The grid of initial conditions
 
@@ -154,7 +159,7 @@ The initial conditions do not need to form a grid: any collection can be used, e
 
 ## Random and stochastic equations
 
-For random and stochastic equations, the picture also depends on the realization of the noise. Averaging over realizations, with the keyword `realizations` of [`solve`](@ref LagrangianDescriptors.solve), shows the structures shared by the realizations. For stochastic equations, the [`IncrementDescriptor`](@ref) gives the descriptor of [BalibreaIniestaEtAl2016](@citet), given by the increments of the solutions over a time grid with step `Δt`, whose values depend on `Δt`, so it should be kept fixed when comparing pictures.
+For random and stochastic equations, the picture also depends on the realization of the noise. By default, each initial condition has independent noise. For stochastic equations, the keyword `shared_noise = true` of [`solve`](@ref LagrangianDescriptors.solve) gives the same noise path to all initial conditions, for the picture of a single realization of the noise, as in [BalibreaIniestaEtAl2016](@citet). Averaging over realizations, with the keyword `realizations`, shows the structures shared by the realizations. The [`IncrementDescriptor`](@ref) gives the descriptor of [BalibreaIniestaEtAl2016](@citet), given by the increments of the solutions over a time grid with step `Δt`, whose values depend on `Δt`, so it should be kept fixed when comparing pictures. See the [stochastic Duffing equation](examples/stochastic_duffing.md) for an example.
 
 ## Summary
 

@@ -300,6 +300,51 @@ end
         end
     end
 
+    @testset "Stopping each direction separately" begin
+        # Damped Duffing equation: forward in time the solutions stay bounded, backward in time
+        # some of them diverge. With both directions and a threshold, only the backward
+        # solutions are stopped, so the forward descriptors are those of a forward solve.
+        f! = function (du, u, p, t)
+            du[1] = u[2]
+            du[2] = u[1] - u[1]^3 - 0.3u[2]
+        end
+        prob = ODEProblem(f!, [0.0, 0.0], (0.0, 8.0))
+        M = function (du, u, p, t)
+            norm(du)
+        end
+        uu0 = [[x, y] for y in range(-1, 1, length = 9), x in range(-1.8, 1.8, length = 9)]
+        kw = (abstol = 1e-10, reltol = 1e-10)
+        both = solve(LagrangianDescriptorProblem(prob, M, uu0), Tsit5(); max_trajectory_value = 10.0, kw...)
+        fwd = solve(LagrangianDescriptorProblem(prob, M, uu0; direction = :forward), Tsit5(); kw...)
+        bwd = solve(LagrangianDescriptorProblem(prob, M, uu0; direction = :backward), Tsit5(); max_trajectory_value = 10.0, kw...)
+        @test any(both.terminated_backward) && !all(both.terminated_backward)
+        @test !any(both.terminated_forward)
+        @test both.terminated == both.terminated_backward
+        @test both.terminated_backward == bwd.terminated_backward
+        @test both(:forward) ≈ fwd(:forward) rtol = 1e-6
+        @test both(:backward) ≈ bwd(:backward) rtol = 1e-6
+        @test all(==(ReturnCode.Success), both.retcodes)
+        # the stopped backward descriptors are smaller than without stopping
+        unstopped = solve(LagrangianDescriptorProblem(remake(prob, tspan = (0.0, 3.0)), M, uu0; direction = :backward), Tsit5())
+        stopped = solve(LagrangianDescriptorProblem(remake(prob, tspan = (0.0, 3.0)), M, uu0; direction = :backward), Tsit5(); max_trajectory_value = 2.0)
+        @test all(stopped(:backward) .<= unstopped(:backward) .+ 1e-8)
+        @test all(stopped(:backward)[stopped.terminated_backward] .< unstopped(:backward)[stopped.terminated_backward])
+        # the solution's display reports the stopped solutions
+        @test occursin("stopped by `max_trajectory_value`: 0 forward, $(count(both.terminated_backward)) backward",
+            sprint(show, MIME("text/plain"), both))
+
+        # out of place, scalar: u' = u diverges forward and decays backward
+        g = function (u, p, t)
+            u
+        end
+        sol = solve(LagrangianDescriptorProblem(ODEProblem(g, 1.0, (0.0, 5.0)), M, [0.5, 1.0, 2.0]), Tsit5(); max_trajectory_value = 10.0)
+        @test all(sol.terminated_forward) && !any(sol.terminated_backward)
+        # the forward descriptor, the length |u(t) - u0| of the path, stops once |u| exceeds 10,
+        # within the solver step in which it does
+        @test all(10 .- [0.5, 1.0, 2.0] .<= sol(:forward) .<= 10.5 .- [0.5, 1.0, 2.0])
+        @test sol(:backward) ≈ [0.5, 1.0, 2.0] .* (1 - exp(-5)) rtol = 1e-3
+    end
+
     @testset "Dissipative system with max_trajectory_value" begin
         # Damped Duffing oscillator - dissipative system where backward integration diverges
         function damped_duffing!(du, u, p, t)
@@ -343,10 +388,14 @@ end
         @test lagsol_no_term.terminated isa BitVector
         @test !any(lagsol_no_term.terminated)
 
-        # Return codes: trajectories stopped by the threshold are `Terminated`
+        # Return codes: stopping a direction does not stop the integration, so the solves
+        # finish normally; the stopped directions are flagged separately
         @test lagsol.retcodes isa Vector{ReturnCode.T}
         @test length(lagsol.retcodes) == length(uu0)
-        @test lagsol.terminated == (lagsol.retcodes .== ReturnCode.Terminated)
+        @test all(==(ReturnCode.Success), lagsol.retcodes)
+        @test lagsol.terminated == lagsol.terminated_forward .| lagsol.terminated_backward
+        @test !any(lagsol.terminated_forward) # forward, the dissipative system stays bounded
+        @test any(lagsol.terminated_backward)
         @test all(==(ReturnCode.Success), lagsol_no_term.retcodes)
         @test all(s -> s.retcode isa ReturnCode.T, lagsol.enssol.u)
 

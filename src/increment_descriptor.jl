@@ -77,16 +77,14 @@ end
 # The infinitesimal descriptor is not used, so the descriptor components stay zero
 _no_descriptor(du, u, args...) = zero(eltype(u))
 
-function _ensemble_setup(prob, d::IncrementDescriptor, direction::Symbol)
+function _ensemble_setup(prob, d::IncrementDescriptor, direction::Symbol, vmax)
     grid = _increment_grid(prob.tspan, d.Δt)
-    augprob = remake(augmentprob(prob, _no_descriptor; direction), saveat = grid, tstops = grid)
+    augprob = remake(augmentprob(prob, _no_descriptor; direction, max_trajectory_value = vmax),
+        saveat = grid, tstops = grid)
     output_func = function (sol, i)
         lfwd = direction == :backward ? nothing : _increment_sum([u.fwd for u in sol.u], d.p)
         lbwd = direction == :forward ? nothing : _increment_sum([u.bwd for u in sol.u], d.p)
-        out = direction == :both ? (lfwd = lfwd, lbwd = lbwd, retcode = sol.retcode) :
-              direction == :forward ? (lfwd = lfwd, retcode = sol.retcode) :
-              (lbwd = lbwd, retcode = sol.retcode)
-        return (out, false)
+        return (_trajectory_output(sol.u[end], direction, sol.retcode, vmax, lfwd, lbwd), false)
     end
     return augprob, output_func
 end

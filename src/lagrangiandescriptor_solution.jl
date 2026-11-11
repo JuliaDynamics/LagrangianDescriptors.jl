@@ -15,16 +15,18 @@ below. They are plotted with `plot(lagsol)`; see the section on plotting.
   end of a trajectory, depending on the direction, and the solver's return code `retcode`.
 - `uu0`: the collection of initial conditions of the problem.
 - `direction`: the direction of the problem, `:both`, `:forward` or `:backward`.
-- `terminated`: a `BitVector` marking the trajectories stopped early by the keyword
-  `max_trajectory_value` of [`solve`](@ref).
+- `terminated`: a `BitVector` marking the trajectories with a direction stopped by the
+  keyword `max_trajectory_value` of [`solve`](@ref).
 - `retcodes`: the solver's return code (a `SciMLBase.ReturnCode.T`) of each trajectory.
   Trajectories that did not finish normally, e.g. because they reached `maxiters` or became
   unstable, are found with `.!SciMLBase.successful_retcode.(lagsol.retcodes)`; their
-  Lagrangian descriptors are not reliable. Trajectories stopped by `max_trajectory_value`
-  have the return code `ReturnCode.Terminated`.
+  Lagrangian descriptors are not reliable.
+- `terminated_forward` and `terminated_backward`: `BitVector`s marking the trajectories whose
+  forward or backward solution, respectively, was stopped by `max_trajectory_value`; their
+  descriptors in that direction only measure the solution up to then.
 
-When solved with several `realizations` (see [`solve`](@ref)), `enssol.u`, `terminated` and
-`retcodes` have one entry per solve: those of all initial conditions of the first
+When solved with several `realizations` (see [`solve`](@ref)), `enssol.u` and the flags and
+return codes have one entry per solve: those of all initial conditions of the first
 realization, then of the second one, and so on.
 """
 struct LagrangianDescriptorSolution{T1,T2,T3}
@@ -33,12 +35,18 @@ struct LagrangianDescriptorSolution{T1,T2,T3}
     direction::T3
     terminated::BitVector
     retcodes::Vector{SciMLBase.ReturnCode.T}
+    terminated_forward::BitVector
+    terminated_backward::BitVector
 end
 
 function LagrangianDescriptorSolution(enssol, uu0, direction)
     retcodes = [s.retcode for s in enssol.u]
-    terminated = BitVector(retcodes .== SciMLBase.ReturnCode.Terminated)
-    return LagrangianDescriptorSolution(enssol, uu0, direction, terminated, retcodes)
+    terminated_forward = BitVector([get(s, :stopped_fwd, false) for s in enssol.u])
+    terminated_backward = BitVector([get(s, :stopped_bwd, false) for s in enssol.u])
+    terminated = terminated_forward .| terminated_backward
+    return LagrangianDescriptorSolution(
+        enssol, uu0, direction, terminated, retcodes, terminated_forward, terminated_backward,
+    )
 end
 
 const DESCRIPTOR_DIRECTIONS = (:forward, :backward, :both, :total, :difference)
@@ -112,7 +120,8 @@ function Base.show(io::IO, ::MIME"text/plain", lagsol::LagrangianDescriptorSolut
     failed = count(!SciMLBase.successful_retcode, lagsol.retcodes)
     failed > 0 && print(io, "\n  unsuccessful solves: ", failed, " (see `retcodes`)")
     any(lagsol.terminated) &&
-        print(io, "\n  terminated by `max_trajectory_value`: ", count(lagsol.terminated))
+        print(io, "\n  stopped by `max_trajectory_value`: ", count(lagsol.terminated_forward), " forward, ",
+            count(lagsol.terminated_backward), " backward")
 end
 
 Base.show(io::IO, prob::LagrangianDescriptorProblem) =

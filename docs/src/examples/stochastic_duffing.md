@@ -23,29 +23,23 @@ uu0 = [[x, y] for y in range(-1, 1, length = 101), x in range(-1.8, 1.8, length 
 nothing # hide
 ```
 
-Following [BalibreaIniestaEtAl2016](@citet), the Lagrangian descriptors of a single realization are computed with the same noise path for all initial conditions. This is obtained by fixing the `seed` of the `SDEProblem`, so that every solve uses the same noise:
+Following [BalibreaIniestaEtAl2016](@citet), the Lagrangian descriptors of a single realization of the noise are computed with the same noise path for all initial conditions, with the keyword `shared_noise = true` of [`solve`](@ref LagrangianDescriptors.solve). By default, each initial condition has independent noise. The `seed` of the `SDEProblem` makes the computation reproducible:
 
 ```@example stochastic_duffing
 prob = SDEProblem(drift, diffusion, [0.0, 0.0], (0.0, 5.0), 0.1; seed = 123)
-lagsol_path = solve(LagrangianDescriptorProblem(prob, M, uu0), EM(), dt = 0.01)
+lagprob = LagrangianDescriptorProblem(prob, M, uu0)
+lagsol_path = solve(lagprob, EM(), dt = 0.01; shared_noise = true)
 nothing # hide
 ```
 
-The pictures of different realizations differ, and their mean over realizations shows the structures they share [BalibreaIniestaEtAl2016](@cite). For pictures, it is best to average realizations that each have a single noise path for all initial conditions, here given by the seeds `1` to `10`:
+The pictures of different realizations differ, and the mean over realizations shows the structures they share. With the keyword `realizations`, the problem is solved for several realizations, each with its own noise path, shared by all initial conditions, and the solution gives the mean of the descriptors:
 
 ```@example stochastic_duffing
-xs = range(-1.8, 1.8, length = 101)
-ys = range(-1, 1, length = 101)
-
-realizations = 10
-Lmean = sum(1:realizations) do seed
-    lagsol = solve(LagrangianDescriptorProblem(remake(prob; seed), M, uu0), EM(), dt = 0.01)
-    lagsol()
-end / realizations
+lagsol_mean = solve(lagprob, EM(), dt = 0.01; shared_noise = true, realizations = 10)
 
 plot(
     plot(lagsol_path, title = "a single realization"),
-    heatmap(xs, ys, reshape(Lmean, size(uu0)), title = "mean over $realizations realizations"),
+    plot(lagsol_mean, title = "mean over 10 realizations"),
     layout = (1, 2), size = (900, 360), margin = 4Plots.mm, titlefont = 10,
     colorbar = false, xlabel = "x", ylabel = "y",
 )
@@ -56,6 +50,6 @@ savefig("stochastic_duffing.png"); nothing # hide
 
 For a single realization, the structures of the deterministic equation, its saddle point and the homoclinic loops, are deformed by the noise, and they change from one realization to another. Their mean shows the structures shared by the realizations.
 
-Alternatively, without a fixed seed, the keyword `realizations` of [`solve`](@ref LagrangianDescriptors.solve) solves each initial condition several times, each with independent noise, and gives the mean of the descriptors. It approximates the same mean at each initial condition, but since the noise is independent from one initial condition to the next, the picture is grainier with few realizations.
+Without `shared_noise = true`, each initial condition has independent noise, also in each realization. The mean over realizations approximates the same mean at each initial condition, but, with few realizations, the picture is grainier, since the noise changes from one initial condition to the next.
 
 The descriptor of [BalibreaIniestaEtAl2016](@citet), given by the increments of the solutions, is available as [`IncrementDescriptor`](@ref).

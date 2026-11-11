@@ -4,7 +4,6 @@ using SciMLBase
 using ComponentArrays, RecipesBase
 using QuadGK: quadgk
 import SciMLBase: solve
-using SciMLBase: DiscreteCallback, CallbackSet, terminate!
 export LagrangianDescriptorProblem, LagrangianDescriptorSolution, lagrangian_descriptor
 export IncrementDescriptor
 

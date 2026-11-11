@@ -1,5 +1,5 @@
 # This file is for `augmentprob` of all types.
-# Currently it is implemented for `ODEProblem` and `RODEProblem`.
+# Currently it is implemented for `ODEProblem`, `RODEProblem` and `SDEProblem`.
 
 const FLOW_DIRECTIONS = (:both, :forward, :backward)
 
@@ -20,41 +20,57 @@ end
 # compiled away. The backward part is integrated via the change of variables `t ↦ 2t0 - t`.
 # Any extra arguments after `t` (e.g. the noise `W` of a `RODEProblem`) are passed on to
 # `f` and `m`.
-struct AugmentedRHS{IIP,FWD,BWD,F,M,T}
+#
+# Each direction is frozen once the absolute value of a component of its solution exceeds
+# `vmax` (see `max_trajectory_value` in `solve`): its solution and its Lagrangian descriptor
+# stop changing, while the other direction goes on. Since a frozen solution stays above
+# `vmax`, no extra state is needed to remember it. With `vmax = Inf`, nothing is frozen.
+struct AugmentedRHS{IIP,FWD,BWD,F,M,T,V}
     f::F
     m::M
     t0::T
+    vmax::V
 end
 
-AugmentedRHS{IIP,FWD,BWD}(f::F, m::M, t0::T) where {IIP,FWD,BWD,F,M,T} =
-    AugmentedRHS{IIP,FWD,BWD,F,M,T}(f, m, t0)
+AugmentedRHS{IIP,FWD,BWD}(f::F, m::M, t0::T, vmax::V = Inf) where {IIP,FWD,BWD,F,M,T,V} =
+    AugmentedRHS{IIP,FWD,BWD,F,M,T,V}(f, m, t0, vmax)
 
-function AugmentedRHS(f, m, t0, iip::Bool, direction::Symbol)
+function AugmentedRHS(f, m, t0, iip::Bool, direction::Symbol, vmax = Inf)
     _check_direction(direction)
     fwd = direction in (:both, :forward)
     bwd = direction in (:both, :backward)
-    return AugmentedRHS{iip,fwd,bwd}(f, m, t0)
+    return AugmentedRHS{iip,fwd,bwd}(f, m, t0, vmax)
 end
+
+# Whether a solution `x`, a number or an array, exceeds `vmax` in absolute value
+_exceeds(x, vmax) = isfinite(vmax) && maximum(abs, x) > vmax
 
 function (rhs::AugmentedRHS{IIP,FWD,BWD})(du, u, p, t, args...) where {IIP,FWD,BWD}
     if FWD
+        frozen = _exceeds(u.fwd, rhs.vmax)
         if IIP
-            rhs.f(du.fwd, u.fwd, p, t, args...)
+            dfwd = du.fwd # a view
+            frozen ? fill!(dfwd, zero(eltype(dfwd))) : rhs.f(dfwd, u.fwd, p, t, args...)
         else
-            du.fwd = rhs.f(u.fwd, p, t, args...)
+            du.fwd = frozen ? zero(u.fwd) : rhs.f(u.fwd, p, t, args...)
         end
-        du.lfwd = rhs.m(du.fwd, u.fwd, p, t, args...)
+        du.lfwd = frozen ? zero(eltype(du)) : rhs.m(du.fwd, u.fwd, p, t, args...)
     end
     if BWD
+        frozen = _exceeds(u.bwd, rhs.vmax)
         tb = 2rhs.t0 - t
         if IIP
             dbwd = du.bwd # a view; `du.bwd .*= -1` would not infer with ComponentArrays
-            rhs.f(dbwd, u.bwd, p, tb, args...)
-            dbwd .*= -1
+            if frozen
+                fill!(dbwd, zero(eltype(dbwd)))
+            else
+                rhs.f(dbwd, u.bwd, p, tb, args...)
+                dbwd .*= -1
+            end
         else
-            du.bwd = -rhs.f(u.bwd, p, tb, args...)
+            du.bwd = frozen ? zero(u.bwd) : -rhs.f(u.bwd, p, tb, args...)
         end
-        du.lbwd = rhs.m(du.bwd, u.bwd, p, tb, args...)
+        du.lbwd = frozen ? zero(eltype(du)) : rhs.m(du.bwd, u.bwd, p, tb, args...)
     end
     return nothing
 end
@@ -69,7 +85,7 @@ function _augmented_u0(u0, direction::Symbol)
 end
 
 """
-    augmentprob(prob::ODEProblem, M; direction::Symbol=:both)
+    augmentprob(prob::ODEProblem, M; direction::Symbol = :both, max_trajectory_value::Real = Inf)
 
 Create an augmented `ODEProblem` by aggregating the forward and backward Lagrangian descriptors to the given `ODEProblem`.
 
@@ -80,15 +96,17 @@ With `tspan = (t0, tf)`, the forward problem is solved over `[t0, tf]` and the b
 The (global) Lagrangian descriptors are based on the provided local descriptor `M=M(du, u, p, t)`. The (forward/backward) Lagrangian descriptor is the time-integration of the local descriptor along the (forward/backward) trajectory.
 
 If `direction=:forward` or `direction=:backward` are given, then only the forward or backward problem is constructed in the augmented system. The default is `direction=:both`, where both directions are considered.
+
+If `max_trajectory_value` is finite, each direction is frozen once the absolute value of a component of its solution exceeds it: its solution and its Lagrangian descriptor stop changing, while the other direction goes on.
 """
-function augmentprob(prob::ODEProblem, M; direction::Symbol = :both)
-    faug = AugmentedRHS(prob.f, M, first(prob.tspan), isinplace(prob), direction)
+function augmentprob(prob::ODEProblem, M; direction::Symbol = :both, max_trajectory_value::Real = Inf)
+    faug = AugmentedRHS(prob.f, M, first(prob.tspan), isinplace(prob), direction, max_trajectory_value)
     uaug0 = _augmented_u0(prob.u0, direction)
     return ODEProblem{true}(faug, uaug0, prob.tspan, prob.p; prob.kwargs...)
 end
 
 """
-    augmentprob(prob::RODEProblem, M; direction::Symbol=:both)
+    augmentprob(prob::RODEProblem, M; direction::Symbol = :both, max_trajectory_value::Real = Inf)
 
 Create an augmented `RODEProblem` by aggregating the forward and backward Lagrangian descriptors to the given `RODEProblem`.
 
@@ -101,8 +119,10 @@ If `prob` has neither `noise` nor `rand_prototype`, the solver's default Wiener 
 The (global) Lagrangian descriptors are based on the provided local descriptor `M=M(du, u, p, t, W)`. The (forward/backward) Lagrangian descriptor is the time-integration of the local descriptor along the (forward/backward) trajectory.
 
 If `direction=:forward` or `direction=:backward` are given, then only the forward or backward problem is constructed in the augmented system. The default is `direction=:both`, where both directions are considered.
+
+If `max_trajectory_value` is finite, each direction is frozen once the absolute value of a component of its solution exceeds it: its solution and its Lagrangian descriptor stop changing, while the other direction goes on.
 """
-function augmentprob(prob::RODEProblem, M; direction::Symbol = :both)
+function augmentprob(prob::RODEProblem, M; direction::Symbol = :both, max_trajectory_value::Real = Inf)
     # With neither `noise` nor `rand_prototype`, the solver creates a default noise shaped
     # like the augmented state, so we give it the shape of `u0` instead. The augmented
     # problem is in place, so its noise is in place too, which a scalar cannot be: for a
@@ -124,7 +144,7 @@ function augmentprob(prob::RODEProblem, M; direction::Symbol = :both)
         (; rand_prototype = zero(prob.u0))
     end
 
-    faug = AugmentedRHS(f, m, first(prob.tspan), isinplace(prob), direction)
+    faug = AugmentedRHS(f, m, first(prob.tspan), isinplace(prob), direction, max_trajectory_value)
     uaug0 = _augmented_u0(prob.u0, direction)
     return RODEProblem{true}(faug, uaug0, prob.tspan, prob.p; noise_kwargs..., prob.kwargs...)
 end
@@ -137,30 +157,37 @@ end
 # non-diagonal noise, the original `n × m` noise matrix goes into the block of rows of
 # `fwd` and the first `m` columns, and into the block of rows of `bwd` and the next `m`
 # columns, so the backward path again gets its own `m` independent noise channels.
-struct AugmentedDiffusion{IIP,FWD,BWD,DIAG,G,T,R}
+#
+# A direction frozen by `AugmentedRHS` (see `vmax`) also gets no noise, so it stays frozen.
+struct AugmentedDiffusion{IIP,FWD,BWD,DIAG,G,T,R,V}
     g::G
     t0::T
     rows::R # for non-diagonal noise: (fwd rows, bwd rows, fwd columns, bwd columns)
+    vmax::V
 end
 
-AugmentedDiffusion{IIP,FWD,BWD,DIAG}(g::G, t0::T, rows::R) where {IIP,FWD,BWD,DIAG,G,T,R} =
-    AugmentedDiffusion{IIP,FWD,BWD,DIAG,G,T,R}(g, t0, rows)
+AugmentedDiffusion{IIP,FWD,BWD,DIAG}(g::G, t0::T, rows::R, vmax::V = Inf) where {IIP,FWD,BWD,DIAG,G,T,R,V} =
+    AugmentedDiffusion{IIP,FWD,BWD,DIAG,G,T,R,V}(g, t0, rows, vmax)
 
 function (diff::AugmentedDiffusion{IIP,FWD,BWD,true})(du, u, p, t) where {IIP,FWD,BWD}
     if FWD
+        frozen = _exceeds(u.fwd, diff.vmax)
         if IIP
-            diff.g(du.fwd, u.fwd, p, t)
+            dfwd = du.fwd # a view
+            frozen ? fill!(dfwd, zero(eltype(dfwd))) : diff.g(dfwd, u.fwd, p, t)
         else
-            du.fwd = diff.g(u.fwd, p, t)
+            du.fwd = frozen ? zero(u.fwd) : diff.g(u.fwd, p, t)
         end
         du.lfwd = zero(eltype(du))
     end
     if BWD
+        frozen = _exceeds(u.bwd, diff.vmax)
         tb = 2diff.t0 - t
         if IIP
-            diff.g(du.bwd, u.bwd, p, tb)
+            dbwd = du.bwd # a view
+            frozen ? fill!(dbwd, zero(eltype(dbwd))) : diff.g(dbwd, u.bwd, p, tb)
         else
-            du.bwd = diff.g(u.bwd, p, tb)
+            du.bwd = frozen ? zero(u.bwd) : diff.g(u.bwd, p, tb)
         end
         du.lbwd = zero(eltype(du))
     end
@@ -171,25 +198,31 @@ function (diff::AugmentedDiffusion{IIP,FWD,BWD,false})(dG, u, p, t) where {IIP,F
     # only the two diagonal blocks are written; the other entries of `dG` stay zero
     rfwd, rbwd, cfwd, cbwd = diff.rows
     if FWD
-        if IIP
-            diff.g(view(dG, rfwd, cfwd), u.fwd, p, t)
+        block = view(dG, rfwd, cfwd)
+        if _exceeds(u.fwd, diff.vmax)
+            fill!(block, zero(eltype(block)))
+        elseif IIP
+            diff.g(block, u.fwd, p, t)
         else
-            dG[rfwd, cfwd] .= diff.g(u.fwd, p, t)
+            block .= diff.g(u.fwd, p, t)
         end
     end
     if BWD
+        block = view(dG, rbwd, cbwd)
         tb = 2diff.t0 - t
-        if IIP
-            diff.g(view(dG, rbwd, cbwd), u.bwd, p, tb)
+        if _exceeds(u.bwd, diff.vmax)
+            fill!(block, zero(eltype(block)))
+        elseif IIP
+            diff.g(block, u.bwd, p, tb)
         else
-            dG[rbwd, cbwd] .= diff.g(u.bwd, p, tb)
+            block .= diff.g(u.bwd, p, tb)
         end
     end
     return nothing
 end
 
 """
-    augmentprob(prob::SDEProblem, M; direction::Symbol=:both)
+    augmentprob(prob::SDEProblem, M; direction::Symbol = :both, max_trajectory_value::Real = Inf)
 
 Create an augmented `SDEProblem` by aggregating the forward and backward Lagrangian descriptors to the given `SDEProblem`.
 
@@ -203,9 +236,11 @@ The (global) Lagrangian descriptors are based on the provided local descriptor `
 
 If `direction=:forward` or `direction=:backward` are given, then only the forward or backward problem is constructed in the augmented system. The default is `direction=:both`, where both directions are considered.
 
+If `max_trajectory_value` is finite, each direction is frozen once the absolute value of a component of its solution exceeds it: its solution and its Lagrangian descriptor stop changing, while the other direction goes on.
+
 Custom noise processes (the `noise` keyword of `SDEProblem`) are not supported, since the augmented system needs noise with a different dimension.
 """
-function augmentprob(prob::SDEProblem, M; direction::Symbol = :both)
+function augmentprob(prob::SDEProblem, M; direction::Symbol = :both, max_trajectory_value::Real = Inf)
     prob.noise === nothing || throw(
         ArgumentError(
             "Custom noise processes are not supported for `SDEProblem`s: the augmented " *
@@ -214,13 +249,13 @@ function augmentprob(prob::SDEProblem, M; direction::Symbol = :both)
     )
     t0 = first(prob.tspan)
     iip = isinplace(prob)
-    faug = AugmentedRHS(prob.f, M, t0, iip, direction)
+    faug = AugmentedRHS(prob.f, M, t0, iip, direction, max_trajectory_value)
     uaug0 = _augmented_u0(prob.u0, direction)
     fwd = direction in (:both, :forward)
     bwd = direction in (:both, :backward)
 
     if prob.noise_rate_prototype === nothing
-        gaug = AugmentedDiffusion{iip,fwd,bwd,true}(prob.g, t0, nothing)
+        gaug = AugmentedDiffusion{iip,fwd,bwd,true}(prob.g, t0, nothing, max_trajectory_value)
         noise_kwargs = (;)
     else
         prob.u0 isa AbstractVector || throw(
@@ -234,7 +269,7 @@ function augmentprob(prob::SDEProblem, M; direction::Symbol = :both)
         cbwd = bwd ? (fwd ? (m+1:2m) : (1:m)) : (1:0)
         nblocks = fwd + bwd
         prototype = zeros(eltype(prob.noise_rate_prototype), length(uaug0), nblocks * m)
-        gaug = AugmentedDiffusion{iip,fwd,bwd,false}(prob.g, t0, (rfwd, rbwd, cfwd, cbwd))
+        gaug = AugmentedDiffusion{iip,fwd,bwd,false}(prob.g, t0, (rfwd, rbwd, cfwd, cbwd), max_trajectory_value)
         noise_kwargs = (; noise_rate_prototype = prototype)
     end
 

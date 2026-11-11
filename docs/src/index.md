@@ -134,7 +134,6 @@ The solutions can be plotted with Plots.jl or with Makie.jl, as heatmaps for gri
 
 What is currently missing:
 1. Support for other types of problems, such as mixed differential-algebraic equations, etc.;
-1. Independent copies of a given noise process for the backward direction of random equations: for a `RODEProblem` with the default Wiener noise, the forward and backward directions are driven by independent copies of the noise, as for a two-sided Wiener process, but for a `RODEProblem` with a given `noise` process, an independent copy of the process is not available in general, so both directions are currently driven by the same process, at the forward time;
 1. Maybe an adaptive method to refine the set `uu0` of initial conditions!;
 1. I don't know whether/how the idea applies to delay type equations, but we should check that out.
 1. Register the package.

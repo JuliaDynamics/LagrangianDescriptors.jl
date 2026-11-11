@@ -7,10 +7,7 @@
 #
 # An optional argument gives another path for the image.
 
-# Draw the figure without opening a window (GR's headless mode), unless set otherwise
-ENV["GKSwstype"] = get(ENV, "GKSwstype", "100")
-
-using OrdinaryDiffEq, Plots
+using CairoMakie, OrdinaryDiffEq
 using LinearAlgebra: norm
 using LagrangianDescriptors
 
@@ -32,14 +29,16 @@ lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 
 lagsol = solve(lagprob, Tsit5())
 
-plot(lagsol, :forward, size = (1280, 640), colorbar = false, axes = false, ticks = false,
-    xlabel = "", ylabel = "")
-
-annotate!([
-    (0.6, -1.1, text("LagrangianDescriptors.jl", 68, :white, :center, "Times")),
-    (0.6, -1.25, text("Painting the phase portrait of random and deterministic systems", 26, :white, :center, "Times")),
-])
+fig = Figure(size = (1280, 640), figure_padding = 0)
+ax = Axis(fig[1, 1])
+hidedecorations!(ax)
+hidespines!(ax)
+heatmap!(ax, lagsol, :forward; colormap = :inferno)
+font = Makie.texfont()
+text!(ax, 0.6, -1.1; text = "LagrangianDescriptors.jl", fontsize = 94, font, color = :white, align = (:center, :center))
+text!(ax, 0.6, -1.25; text = "Painting the phase portrait of random and deterministic systems",
+    fontsize = 36, font, color = :white, align = (:center, :center))
 
 output = isempty(ARGS) ? joinpath(@__DIR__, "src", "img", "LagrangianDescriptors_socialpreview.png") : ARGS[1]
-savefig(output)
+save(output, fig; px_per_unit = 1) # 1280 × 640, the size recommended by GitHub
 println("Saved the social preview image to ", output)

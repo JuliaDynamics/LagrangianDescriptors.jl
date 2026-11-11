@@ -3,6 +3,10 @@ module LagrangianDescriptorsMakieExt
 using LagrangianDescriptors: LagrangianDescriptorSolution, _plot_data
 using Makie: Makie
 
+# The default colormap, the same as in Plots, so that the figures look the same in both;
+# `colormap = ...` overrides it
+const DEFAULT_COLORMAP = :inferno
+
 Makie.used_attributes(::Type{<:Makie.Plot}, ::LagrangianDescriptorSolution, args...) = (:idxs,)
 
 function Makie.plottype(lagsol::LagrangianDescriptorSolution, args...)
@@ -19,9 +23,9 @@ function Makie.convert_arguments(
         return Makie.convert_arguments(PT, data.x, data.z)
     elseif data.kind == :heatmap
         # Makie's `heatmap(x, y, z)` has `z[i, j]` at `(x[i], y[j])`
-        return Makie.convert_arguments(PT, data.x, data.y, permutedims(data.z))
+        return [Makie.PlotSpec(Makie.plotsym(PT), data.x, data.y, permutedims(data.z); colormap = DEFAULT_COLORMAP)]
     else
-        return [Makie.PlotSpec(Makie.plotsym(PT), Makie.Point2f.(data.x, data.y); color = data.z)]
+        return [Makie.PlotSpec(Makie.plotsym(PT), Makie.Point2f.(data.x, data.y); color = data.z, colormap = DEFAULT_COLORMAP)]
     end
 end
 

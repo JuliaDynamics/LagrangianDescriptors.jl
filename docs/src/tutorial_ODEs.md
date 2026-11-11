@@ -24,7 +24,7 @@ The idea is to set up this system as an `ODEProblem` from [SciML/DifferentialEqu
 So we first load the relevant packages:
 
 ```@example duffing
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEq, CairoMakie
 using LinearAlgebra: norm
 using LagrangianDescriptors
 ```
@@ -65,11 +65,11 @@ lagsol = solve(lagprob, Tsit5())
 With the solution at hand, we plot the Lagrangian descriptors to visualize the dynamics of the system:
 
 ```@example duffing
-plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation \$\\ddot x = x - x^3 + A\\sin(\\omega t)\$\nwith A=$A and ω=$(round(ω, digits=3))", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
-savefig("duffing.png"); nothing # hide
+fig, ax, plt = heatmap(lagsol; axis = (title = "Duffing equation, A = $A, ω = $(round(ω, digits = 3))",
+    xlabel = L"x", ylabel = L"\dot{x}"))
+Colorbar(fig[1, 2], plt; label = "Lagrangian descriptor")
+fig
 ```
-
-![Lagrangian descriptors of the Duffing equation](duffing.png)
 
 We may zoom closer to the origin to find the following "painting":
 
@@ -79,11 +79,11 @@ lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 
 lagsol = solve(lagprob, Tsit5());
 
-plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation \$\\ddot x = x - x^3 + A\\sin(\\omega t)\$\nwith A=$A and ω=$(round(ω, digits=3))", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
-savefig("duffing_zoom.png"); nothing # hide
+fig, ax, plt = heatmap(lagsol; axis = (title = "Duffing equation, A = $A, ω = $(round(ω, digits = 3))",
+    xlabel = L"x", ylabel = L"\dot{x}"))
+Colorbar(fig[1, 2], plt; label = "Lagrangian descriptor")
+fig
 ```
-
-![Lagrangian descriptors of the Duffing equation](duffing_zoom.png)
 
 If we want to change parameters, we just `remake` the original `ODEProblem`:
 
@@ -95,11 +95,11 @@ lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 
 lagsol = solve(lagprob, Tsit5());
 
-plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation \$\\ddot x = x - x^3 + A\\sin(\\omega t)\$\nwith A=$A and ω=$(round(ω, digits=3))", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
-savefig("duffing_A2.png"); nothing # hide
+fig, ax, plt = heatmap(lagsol; axis = (title = "Duffing equation, A = $A, ω = $(round(ω, digits = 3))",
+    xlabel = L"x", ylabel = L"\dot{x}"))
+Colorbar(fig[1, 2], plt; label = "Lagrangian descriptor")
+fig
 ```
-
-![Lagrangian descriptors of the Duffing equation](duffing_A2.png)
 
 ## Autonomous Duffing equation
 
@@ -113,11 +113,11 @@ lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 
 lagsol = solve(lagprob, Tsit5());
 
-plot(lagsol, title="Lagrangian descriptors for the forced Duffing equation \$\\ddot x = x - x^3 + A\\sin(\\omega t)\$\nwith A=$A and ω=$(round(ω, digits=3))", titlefont=8, xlabel="\$x\$", ylabel="\$\\dot x\$")
-savefig("duffing_autonomous.png"); nothing # hide
+fig, ax, plt = heatmap(lagsol; axis = (title = "Duffing equation, A = $A, ω = $(round(ω, digits = 3))",
+    xlabel = L"x", ylabel = L"\dot{x}"))
+Colorbar(fig[1, 2], plt; label = "Lagrangian descriptor")
+fig
 ```
-
-![Lagrangian descriptors of the Duffing equation](duffing_autonomous.png)
 
 ## A scalar cubic equation
 
@@ -132,7 +132,7 @@ This equation has three stationary solutions, associated with the fixed points `
 We set up the `ODEProblem`, loading the packages first:
 
 ```@example cubic
-using OrdinaryDiffEq, Plots
+using OrdinaryDiffEq, CairoMakie
 using LinearAlgebra: norm
 using LagrangianDescriptors
 
@@ -160,19 +160,13 @@ lagsol = solve(lagprob, Tsit5())
 and plot it:
 
 ```@example cubic
-plot(
-    uu0,
-    lagsol(:forward),
-    label = "forward",
-    title = "Lagrangian descriptors for a cubic equation",
-    titlefont = 10,
-)
-plot!(uu0, lagsol(:backward), label = "backward")
-plot!(uu0, lagsol(), label = "total")
-plot!(uu0, lagsol(:difference), label = "difference")
-savefig("cubic.png"); nothing # hide
+fig = Figure()
+ax = Axis(fig[1, 1]; title = "Lagrangian descriptors for a cubic equation", xlabel = L"x_0")
+for direction in (:forward, :backward, :total, :difference)
+    lines!(ax, lagsol, direction; label = string(direction))
+end
+axislegend(ax; position = :ct)
+fig
 ```
-
-![Lagrangian descriptors of the cubic equation](cubic.png)
 
 In any of the Lagrangian descriptors (forward, backward, total, and difference) we distinguish the two fixed points.

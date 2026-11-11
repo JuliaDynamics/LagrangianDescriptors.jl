@@ -4,6 +4,9 @@ using Makie, Test
 # Makie functions are qualified, since Plots, loaded by other test files, exports the same names
 using LinearAlgebra: norm
 
+# the heatmap and scatter recipes wrap the actual plot, which carries the default colormap
+atomic(plt) = only(Makie.collect_atomic_plots(plt))
+
 @testset "Makie" begin
     @test Base.get_extension(LagrangianDescriptors, :LagrangianDescriptorsMakieExt) !== nothing
 
@@ -24,16 +27,21 @@ using LinearAlgebra: norm
         for uu0 in ([[x, y] for y in ys, x in xs], [[x, y] for x in xs, y in ys])
             lagsol = solve(LagrangianDescriptorProblem(prob, M, uu0), Tsit5())
             @test Makie.plottype(lagsol) == Heatmap
-            x, y, z = Makie.convert_arguments(Heatmap, lagsol, :forward)
+            x, y, z = only(Makie.convert_arguments(Heatmap, lagsol, :forward)).args
             values = Dict(zip(vec(uu0), lagsol(:forward)))
             @test size(z) == (length(xs), length(ys))
             @test all(z[l, k] ≈ values[[xs[l], ys[k]]] for l in eachindex(xs), k in eachindex(ys))
 
             fig, ax, plt = Makie.plot(lagsol)
-            @test plt isa Heatmap
+            @test atomic(plt) isa Heatmap
+            @test atomic(plt).colormap[] == :inferno
             @test_nowarn Colorbar(fig[1, 2], plt)
-            @test Makie.heatmap(lagsol, :backward).plot isa Heatmap
-            @test Makie.contourf(lagsol).plot isa Contourf
+            @test atomic(Makie.heatmap(lagsol, :backward).plot) isa Heatmap
+            @test only(Makie.contourf(lagsol).plot.plots) isa Contourf
+            # the default colormap gives way to the user's
+            plt = Makie.heatmap(lagsol; colormap = :viridis, colorrange = (0, 1)).plot
+            @test atomic(plt).colormap[] == :viridis
+            @test atomic(plt).colorrange[] == [0, 1]
         end
     end
 
@@ -43,8 +51,10 @@ using LinearAlgebra: norm
         fig, ax, plt = Makie.plot(lagsol)
         @test_nowarn Colorbar(fig[1, 2], plt)
         fig, ax, plt = Makie.scatter(lagsol, :forward)
-        scatterplot = only(Makie.collect_atomic_plots(plt))
+        scatterplot = atomic(plt)
         @test scatterplot isa Scatter
+        @test scatterplot.colormap[] == :inferno
+        @test atomic(Makie.scatter(lagsol; colormap = :viridis).plot).colormap[] == :viridis
         @test scatterplot.color[] ≈ lagsol(:forward) # Makie stores colors as Float32
         @test first.(scatterplot[1][]) ≈ xs
     end
@@ -57,7 +67,7 @@ using LinearAlgebra: norm
         end
         prob3 = ODEProblem(g!, zeros(3), (0.0, 1.0))
         lagsol = solve(LagrangianDescriptorProblem(prob3, M, [[x, 0.5, z] for z in ys, x in xs]), Tsit5())
-        @test Makie.heatmap(lagsol; idxs = (1, 3)).plot isa Heatmap
+        @test atomic(Makie.heatmap(lagsol; idxs = (1, 3)).plot) isa Heatmap
         @test_throws ArgumentError Makie.heatmap(lagsol; idxs = (1, 4))
     end
 

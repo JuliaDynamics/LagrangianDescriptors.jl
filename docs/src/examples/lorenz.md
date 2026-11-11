@@ -15,7 +15,7 @@ with ``\sigma = 10``, ``\rho = 28`` and ``\beta = 8/3``, has a chaotic attractor
 Backward in time, the volumes of phase space expand and the solutions diverge, so we only compute the forward descriptors, which reveal the stable manifolds.
 
 ```@example lorenz
-using LagrangianDescriptors, OrdinaryDiffEq, Plots
+using LagrangianDescriptors, OrdinaryDiffEq, CairoMakie
 using LinearAlgebra: norm
 
 function lorenz!(du, u, p, t)
@@ -33,11 +33,10 @@ uu0 = [[x, y, 27.0] for y in range(-25, 25, length = 201), x in range(-20, 20, l
 
 lagsol = solve(LagrangianDescriptorProblem(prob, M, uu0; direction = :forward), Tsit5())
 
-plot(lagsol, xlabel = "x", ylabel = "y", title = "slice z = 27", titlefont = 10)
-savefig("lorenz_xy.png"); nothing # hide
+fig, ax, plt = heatmap(lagsol; axis = (title = "slice z = 27", xlabel = "x", ylabel = "y"))
+Colorbar(fig[1, 2], plt; label = "forward Lagrangian descriptor")
+fig
 ```
-
-![Forward Lagrangian descriptors of the Lorenz system on the plane z = 27](lorenz_xy.png)
 
 The dark regions around the fixed points are the solutions that stay close to them, and the sharp curves are the intersections of the stable manifold of the origin, which separates the two wings of the attractor, with the plane. With a longer time window, more of its folds appear, but they also become thinner.
 
@@ -48,8 +47,7 @@ uu0_xz = [[x, 0.0, z] for z in range(0, 50, length = 201), x in range(-20, 20, l
 
 lagsol_xz = solve(LagrangianDescriptorProblem(prob, M, uu0_xz; direction = :forward), Tsit5())
 
-plot(lagsol_xz; idxs = (1, 3), xlabel = "x", ylabel = "z", title = "slice y = 0", titlefont = 10)
-savefig("lorenz_xz.png"); nothing # hide
+fig, ax, plt = heatmap(lagsol_xz; idxs = (1, 3), axis = (title = "slice y = 0", xlabel = "x", ylabel = "z"))
+Colorbar(fig[1, 2], plt; label = "forward Lagrangian descriptor")
+fig
 ```
-
-![Forward Lagrangian descriptors of the Lorenz system on the plane y = 0](lorenz_xz.png)

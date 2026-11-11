@@ -12,7 +12,7 @@ The Duffing equation with additive noise in the velocity,
 where ``W_t`` is a Wiener process, is a stochastic perturbation of the Duffing equation of the page on [choosing the descriptor and the time window](../choosing.md). We set it up as an `SDEProblem`, with diagonal noise, which is zero in the first component:
 
 ```@example stochastic_duffing
-using LagrangianDescriptors, StochasticDiffEq, Plots
+using LagrangianDescriptors, StochasticDiffEq, CairoMakie
 using LinearAlgebra: norm
 
 drift(u, p, t) = [u[2], u[1] - u[1]^3]
@@ -37,16 +37,13 @@ The pictures of different realizations differ, and the mean over realizations sh
 ```@example stochastic_duffing
 lagsol_mean = solve(lagprob, EM(), dt = 0.01; shared_noise = true, realizations = 10)
 
-plot(
-    plot(lagsol_path, title = "a single realization"),
-    plot(lagsol_mean, title = "mean over 10 realizations"),
-    layout = (1, 2), size = (900, 360), margin = 4Plots.mm, titlefont = 10,
-    colorbar = false, xlabel = "x", ylabel = "y",
-)
-savefig("stochastic_duffing.png"); nothing # hide
+fig = Figure(size = (1000, 400))
+ax = Axis(fig[1, 1]; title = "a single realization", xlabel = "x", ylabel = "y")
+heatmap!(ax, lagsol_path)
+ax = Axis(fig[1, 2]; title = "mean over 10 realizations", xlabel = "x", ylabel = "y")
+heatmap!(ax, lagsol_mean)
+fig
 ```
-
-![Lagrangian descriptors of the stochastic Duffing equation](stochastic_duffing.png)
 
 For a single realization, the structures of the deterministic equation, its saddle point and the homoclinic loops, are deformed by the noise, and they change from one realization to another. Their mean shows the structures shared by the realizations.
 

@@ -10,7 +10,7 @@ The double gyre is a time-dependent model of a fluid flow, with two counter-rota
 ```
 
 ```@example doublegyre
-using LagrangianDescriptors, OrdinaryDiffEq, Plots
+using LagrangianDescriptors, OrdinaryDiffEq, CairoMakie
 using LinearAlgebra: norm
 
 function doublegyre!(du, u, p, t)
@@ -32,10 +32,9 @@ uu0 = [[x, y] for y in range(0, 1, length = 201), x in range(0, 2, length = 401)
 
 lagsol = solve(LagrangianDescriptorProblem(prob, M, uu0), Tsit5())
 
-plot(lagsol, xlabel = "x", ylabel = "y", size = (900, 450))
-savefig("doublegyre.png"); nothing # hide
+fig, ax, plt = heatmap(lagsol; axis = (xlabel = "x", ylabel = "y"), figure = (size = (900, 450),))
+Colorbar(fig[1, 2], plt; label = "Lagrangian descriptor")
+fig
 ```
-
-![Lagrangian descriptors of the double gyre](doublegyre.png)
 
 Since the flow is time dependent, the picture is that at the initial time ``t_0 = 0``. The sharp curves are the stable and unstable manifolds of the hyperbolic trajectories near the oscillating boundary between the gyres. They intersect in a sequence of lobes, which carry fluid from one gyre to the other in each period.

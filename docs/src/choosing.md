@@ -16,7 +16,7 @@ We use the Duffing equation ``\ddot x = x - x^3``, written as the system
 It has a saddle point at the origin, whose stable and unstable manifolds form two homoclinic loops, and two centers, at ``(\pm 1, 0)``, surrounded by periodic orbits.
 
 ```@example choosing
-using LagrangianDescriptors, OrdinaryDiffEq, Plots
+using LagrangianDescriptors, OrdinaryDiffEq, CairoMakie
 using LinearAlgebra: norm
 
 function duffing!(du, u, p, t)
@@ -41,17 +41,13 @@ With `M(du, u, p, t) = norm(du)`, the forward Lagrangian descriptor is the lengt
 The forward descriptors reveal the stable manifolds, the backward ones the unstable manifolds, and their sum, the default, shows both:
 
 ```@example choosing
-plot(
-    plot(lagsol, :forward, title = "forward"),
-    plot(lagsol, :backward, title = "backward"),
-    plot(lagsol, :total, title = "total"),
-    layout = (1, 3), size = (1200, 360), margin = 4Plots.mm, titlefont = 10, colorbar = false,
-    xlabel = "x", ylabel = "y",
-)
-savefig("directions.png"); nothing # hide
+fig = Figure(size = (1200, 400))
+for (i, direction) in enumerate((:forward, :backward, :total))
+    ax = Axis(fig[1, i]; title = string(direction), xlabel = "x", ylabel = "y")
+    heatmap!(ax, lagsol, direction)
+end
+fig
 ```
-
-![Forward, backward and total Lagrangian descriptors of the Duffing equation](directions.png)
 
 If only the stable or only the unstable manifolds are of interest, it is cheaper to solve in a single direction, with the keyword `direction = :forward` or `direction = :backward` of [`LagrangianDescriptorProblem`](@ref).
 
@@ -63,16 +59,13 @@ The most common choice is the norm of the velocity, `norm(du)`, which makes the 
 Mhalf(du, u, p, t) = sum(x -> sqrt(abs(x)), du)
 lagsol_half = solve(LagrangianDescriptorProblem(prob, Mhalf, uu0), Tsit5())
 
-plot(
-    plot(lagsol, title = "norm(du)"),
-    plot(lagsol_half, title = "p-norm with p = 1/2"),
-    layout = (1, 2), size = (900, 360), margin = 4Plots.mm, titlefont = 10, colorbar = false,
-    xlabel = "x", ylabel = "y",
-)
-savefig("descriptors.png"); nothing # hide
+fig = Figure(size = (1000, 400))
+ax = Axis(fig[1, 1]; title = "norm(du)", xlabel = "x", ylabel = "y")
+heatmap!(ax, lagsol)
+ax = Axis(fig[1, 2]; title = "p-norm with p = 1/2", xlabel = "x", ylabel = "y")
+heatmap!(ax, lagsol_half)
+fig
 ```
-
-![Lagrangian descriptors of the Duffing equation with two infinitesimal descriptors](descriptors.png)
 
 Any function with the arguments of the table in the [API](@ref "Lagrangian descriptors") can be used, e.g. depending on the state `u` instead of the velocity, or on a single component of the velocity, to highlight particular features of a problem.
 
@@ -81,16 +74,14 @@ Any function with the arguments of the table in the [API](@ref "Lagrangian descr
 The time span `(t0, tf)` of the problem sets the time windows: ``[t_0, t_f]`` forward and ``[2t_0 - t_f, t_0]`` backward, both of length ``\tau = t_f - t_0``. A short window only reveals the structures near each initial condition, and a long one reveals more of them, as the solutions explore more of the phase space:
 
 ```@example choosing
-plots = map((1.0, 3.0, 8.0)) do τ
+fig = Figure(size = (1200, 400))
+for (i, τ) in enumerate((1.0, 3.0, 8.0))
     sol = solve(LagrangianDescriptorProblem(remake(prob, tspan = (0.0, τ)), M, uu0), Tsit5())
-    plot(sol, title = "τ = $τ")
+    ax = Axis(fig[1, i]; title = "τ = $τ", xlabel = "x", ylabel = "y")
+    heatmap!(ax, sol)
 end
-plot(plots..., layout = (1, 3), size = (1200, 360), margin = 4Plots.mm, titlefont = 10,
-    colorbar = false, xlabel = "x", ylabel = "y")
-savefig("windows.png"); nothing # hide
+fig
 ```
-
-![Lagrangian descriptors of the Duffing equation for three time windows](windows.png)
 
 A good window is comparable to the time scales of the dynamics of interest, e.g. a few periods of the periodic orbits, or a few times the time it takes to approach a saddle. With longer windows, the features become thinner and more intricate, which needs a finer grid of initial conditions, and solutions of unbounded systems may grow too large (see below). It is often worth trying a few values of ``\tau``.
 
@@ -124,16 +115,14 @@ ys = range(-1.0, 1.0, length = 201)
 Lbwd = lagsol_damped(:backward)
 Lbwd[lagsol_damped.terminated_backward] .= NaN
 
-plot(
-    plot(lagsol_damped, :forward, title = "forward"),
-    heatmap(xs, ys, reshape(Lbwd, size(uu0)), title = "backward, without the diverging solutions"),
-    layout = (1, 2), size = (900, 360), margin = 4Plots.mm, titlefont = 10, colorbar = false,
-    xlabel = "x", ylabel = "y",
-)
-savefig("damped.png"); nothing # hide
+fig = Figure(size = (1000, 400))
+ax = Axis(fig[1, 1]; title = "forward", xlabel = "x", ylabel = "y")
+heatmap!(ax, lagsol_damped, :forward)
+ax = Axis(fig[1, 2]; title = "backward, bounded solutions", xlabel = "x", ylabel = "y")
+# Makie's `heatmap(xs, ys, z)` has `z[i, j]` at `(xs[i], ys[j])`, hence the `permutedims`
+heatmap!(ax, xs, ys, permutedims(reshape(Lbwd, size(uu0))))
+fig
 ```
-
-![Forward and backward Lagrangian descriptors of the damped Duffing equation, without the solutions that diverge backward](damped.png)
 
 More generally, the return codes in `lagsol.retcodes` tell which solutions did not finish normally, e.g. because they reached the maximum number of steps; their descriptors are not reliable. See [GarciaGarridoGarciaLuengo2022](@citet) for more on dissipative systems.
 
@@ -144,16 +133,13 @@ Features thinner than the spacing of the grid are missed, and the cost of the co
 ```@example choosing
 coarse = [[x, y] for y in range(-1.0, 1.0, length = 41), x in range(-1.8, 1.8, length = 41)]
 zoom = [[x, y] for y in range(-0.3, 0.3, length = 201), x in range(-0.3, 0.3, length = 201)]
-plot(
-    plot(solve(LagrangianDescriptorProblem(prob, M, coarse), Tsit5()), title = "41 × 41 grid"),
-    plot(solve(LagrangianDescriptorProblem(prob, M, zoom), Tsit5()), title = "zoom near the saddle"),
-    layout = (1, 2), size = (900, 360), margin = 4Plots.mm, titlefont = 10, colorbar = false,
-    xlabel = "x", ylabel = "y",
-)
-savefig("grids.png"); nothing # hide
+fig = Figure(size = (1000, 400))
+ax = Axis(fig[1, 1]; title = "41 × 41 grid", xlabel = "x", ylabel = "y")
+heatmap!(ax, solve(LagrangianDescriptorProblem(prob, M, coarse), Tsit5()))
+ax = Axis(fig[1, 2]; title = "zoom near the saddle", xlabel = "x", ylabel = "y")
+heatmap!(ax, solve(LagrangianDescriptorProblem(prob, M, zoom), Tsit5()))
+fig
 ```
-
-![Lagrangian descriptors of the Duffing equation on a coarse grid and on a zoomed grid](grids.png)
 
 The initial conditions do not need to form a grid: any collection can be used, e.g. points along a curve, or a two-dimensional slice of initial conditions of a higher-dimensional system, chosen for plotting with the keyword `idxs` (see the section on plotting in the [API](@ref)).
 

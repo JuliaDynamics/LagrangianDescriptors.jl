@@ -1,5 +1,9 @@
 cd(@__DIR__)
 
+# Draw the Plots figures without opening windows (GR's headless mode), unless set
+# otherwise; this must be set before the first plot
+ENV["GKSwstype"] = get(ENV, "GKSwstype", "100")
+
 using LagrangianDescriptors
 
 pages = [
@@ -11,6 +15,7 @@ pages = [
         "RODEs" => "tutorial_RODEs.md",
         "Alternative via post-processing" => "postprocessing.md",
     ],
+    "Plotting" => "plotting.md",
     "Examples" => [
         "Overview" => "examples/index.md",
         "Saddle point" => "examples/saddle.md",

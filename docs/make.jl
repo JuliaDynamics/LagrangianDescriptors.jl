@@ -47,6 +47,8 @@ build_docs_with_style(
     bib,
     # the stable documentation only exists after the first release
     linkcheck_ignore = [r"^https://juliadynamics\.github\.io/LagrangianDescriptors\.jl/stable/?$"],
+    # the style's default timeout of 2 seconds is too short for some sites on the CI
+    linkcheck_timeout = 10,
     authors = "Ricardo Rosa",
     htmlkw = (
         canonical = "https://juliadynamics.github.io/LagrangianDescriptors.jl/stable/",

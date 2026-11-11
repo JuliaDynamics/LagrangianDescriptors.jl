@@ -8,23 +8,27 @@ This is much simpler to implement, *but* it has some drawbacks:
 
 1. First, we will need to save each trajectory in full, for later post-processing, instead of only ``L_\mathrm{fwd}(t_f)`` and ``L_\mathrm{bwd}(t_f)``. Hence, this is much more memory demanding. Keep in mind we need to solve for a lot of trajectories.
 1. If we want the backward Lagrangian descriptors, we also need to set up and solve the system backward.
-1. Some solutions may have some spread out time steps saved by the solver. We either have to force it to save on a fine time mesh for an faster and accurate integration, or we use the interpolation present in the solution, which is usually much slower to compute.
+1. Some solutions may have some spread out time steps saved by the solver. We either have to force it to save on a fine time mesh for a faster and accurate integration, or we use the interpolation present in the solution, which is usually much slower to compute.
 
 ## Example
 
 Here we exemplify the idea by integrating a single solution of a scalar cubic equation using [JuliaMath/QuadGK.jl](https://github.com/JuliaMath/QuadGK.jl).
 
-It boils down to taking a solution `sol` of the `ODEProblem` and integrating the infinitesimal descriptor `M` with the apropriate arguments. In the case of a scalar ODE with an out-of-place right hand side `f=f(u, p, t)` and an infinitesimal descriptor `M=M(u, p, t)`, this is simply
+It boils down to taking a solution `sol` of the `ODEProblem` and integrating the infinitesimal descriptor `M` with the appropriate arguments. In the case of a scalar ODE with an out-of-place right hand side `f=f(u, p, t)` and an infinitesimal descriptor `M=M(u, p, t)`, this is simply
 
 ```julia
 M(t) = M(sol(t), sol.prob.p, t)
 first(quadgk(M, minimum(tspan), maximum(tspan)))
 ```
 
-For a more generic implementation for `ODESolution` types, in either in-place or out-of-place cases, and for either backward of forward descriptors, we define the function
+For a more generic implementation for `ODESolution` types, in either in-place or out-of-place cases, and for either backward or forward descriptors, one can define a function such as
 
-```julia postprocessing
-function lagrangian_descriptor(sol::ODESolution, M)
+```@example postprocessing
+using OrdinaryDiffEq
+using SciMLBase: isinplace
+using QuadGK: quadgk
+
+function simple_lagrangian_descriptor(sol::ODESolution, M)
     t0, tf = extrema(sol.prob.tspan)
     integrand = isinplace(sol.prob) ?
         function (t, du = similar(sol.prob.u0))
@@ -37,11 +41,12 @@ function lagrangian_descriptor(sol::ODESolution, M)
         end
     return first(quadgk(integrand, t0, tf))
 end
+nothing # hide
 ```
 
-With this definition, we compare the two different approaches, making sure they yield the same result, up to approximation errors:
+A version of this, which also avoids some allocations, is available in the package as [`lagrangian_descriptor`](@ref). We compare the two approaches, augmenting the system and post-processing its solutions, the latter with both versions, making sure they yield the same result, up to approximation errors:
 
-```julia postprocessing
+```@example postprocessing
 using OrdinaryDiffEq, Test
 using LagrangianDescriptors
 using LagrangianDescriptors: augmentprob
@@ -73,67 +78,41 @@ augsol = solve(augprob, Tsit5())
 @testset "Augmented vs post-processing" begin
     @test augsol.u[end].lfwd ≈ lagrangian_descriptor(solfwd, M) rtol = 0.01
     @test augsol.u[end].lbwd ≈ lagrangian_descriptor(solbwd, M) atol = 0.01
+    @test simple_lagrangian_descriptor(solfwd, M) ≈ lagrangian_descriptor(solfwd, M) rtol = 1e-6
+    @test simple_lagrangian_descriptor(solbwd, M) ≈ lagrangian_descriptor(solbwd, M) rtol = 1e-6
 end
-```
-
-```zsh
-Test Summary:                | Pass  Total  Time
-Augmented vs post-processing |    2      2  0.2s
-Test.DefaultTestSet("Augmented vs post-processing", Any[], 2, false, false, true, 1.664213738359913e9, 1.664213738562828e9)
+nothing # hide
 ```
 
 ## Benchmark
 
 And here is a benchmark with the above setup, with a single solution of the augmented system versus post-processing:
 
-```julia postprocessing
-using BenchmarkTools: @btime
+```@example postprocessing
+using BenchmarkTools
+BenchmarkTools.DEFAULT_PARAMETERS.seconds = 1 # hide
 
-@info "Create forward ODE problem:"
-@btime ODEProblem($f!, $u0, $tspanfwd)
+benchmarks = [
+    "Create forward ODE problem" => @benchmark(ODEProblem($f!, $u0, $tspanfwd)),
+    "Remake for backward ODE problem" => @benchmark(remake($probfwd, tspan = $tspanbwd)),
+    "Solve forward ODE problem" => @benchmark(solve($probfwd, $(Tsit5()))),
+    "Solve backward ODE problem" => @benchmark(solve($probbwd, $(Tsit5()))),
+    "Create augmented ODE problem" => @benchmark(augmentprob($probfwd, $M)),
+    "Solve augmented ODE problem" => @benchmark(solve($augprob, $(Tsit5()))),
+    "Post-processing for forward Lagrangian descriptor" => @benchmark(lagrangian_descriptor($solfwd, $M)),
+    "Post-processing for backward Lagrangian descriptor" => @benchmark(lagrangian_descriptor($solbwd, $M)),
+    "Simple post-processing, forward" => @benchmark(simple_lagrangian_descriptor($solfwd, $M)),
+    "Simple post-processing, backward" => @benchmark(simple_lagrangian_descriptor($solbwd, $M)),
+]
 
-@info "Remake for backward ODE problem:"
-@btime remake($probfwd, tspan = $tspanbwd)
-
-@info "Solve forward ODE problem:"
-@btime solve($probfwd, $(Tsit5()))
-
-@info "Solve backward ODE problem:"
-@btime solve($probbwd, $(Tsit5()))
-    
-@info "Create augmented ODE problem:"
-@btime augmentprob($probfwd, $M)
-    
-@info "Solve Augmented ODE problem:"
-@btime solve($augprob, $(Tsit5()))
-
-@info "Postprocessing for forward Lagrangian descriptor:"
-@btime $lagrangian_descriptor($solfwd, $M)
-
-@info "Postprocessing for backward Lagrangian descriptor:"
-@btime $lagrangian_descriptor($solbwd, $M)
+Text(join((rpad(name, 52) * lpad(BenchmarkTools.prettytime(minimum(b).time), 12) *
+    lpad("$(minimum(b).allocs) allocations", 18) * lpad(BenchmarkTools.prettymemory(minimum(b).memory), 12)
+    for (name, b) in benchmarks), "\n"))
 ```
 
-```zsh
-[ Info: Create forward ODE problem:
-  4.327 μs (59 allocations: 2.34 KiB)
-[ Info: Remake for backward ODE problem:
-  2.084 ns (0 allocations: 0 bytes)
-[ Info: Solve forward ODE problem:
-  6.492 μs (146 allocations: 15.31 KiB)
-[ Info: Solve backward ODE problem:
-  6.508 μs (146 allocations: 15.31 KiB)
-[ Info: Create augmented ODE problem:
-  8.722 μs (130 allocations: 6.38 KiB)
-[ Info: Solve Augmented ODE problem:
-  22.916 μs (388 allocations: 38.05 KiB)
-[ Info: Postprocessing for forward Lagrangian descriptor:
-  97.750 μs (1488 allocations: 140.91 KiB)
-[ Info: Postprocessing for backward Lagrangian descriptor:
-  44.375 μs (677 allocations: 63.64 KiB)
-1.0964245933425085
-```
 
-We see that solving both forward and backward equations separately is a bit faster than solving the augmented system with both forward and backward evolutions together, but the latter also includes the computations of the Lagrangian descriptors. The number of allocations and memory are about the same.
+We see that solving the augmented system, with the forward and backward evolutions together, takes about as long as solving the forward and backward equations separately, while it also computes the Lagrangian descriptors.
 
-On the other hand, solving the forward and backward equations separately requires a post-processing step for each forward and backward evolutions to obtain the Lagrangian descriptors, and that takes quite a longer time and substantially more allocations and memory. And this was done for a single trajectory. Imagine for the ensemble of solutions, on top of the memory demand of saving the full solutions.
+On the other hand, solving the forward and backward equations separately requires a post-processing step for each of the forward and backward evolutions to obtain the Lagrangian descriptors, and each of these steps takes longer than solving the augmented system itself. Altogether, this route takes several times as long as solving the augmented system, and it needs the full solutions to be saved, while the augmented system only needs the values of the descriptors at the final time. And this was done for a single trajectory. Imagine it for an ensemble of solutions.
+
+The package's [`lagrangian_descriptor`](@ref) is faster than the simple version above, and allocates much less, since it interpolates the solution in place and evaluates it only once at each time.

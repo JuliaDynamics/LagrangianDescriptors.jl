@@ -6,7 +6,7 @@ Painting the phase portrait of deterministic and stochastic systems.
 
 ## About
 
-The dynamics of evolutionary systems can be quite intricate. The method of **Lagrangian Descriptors** helps to visualize the complicate behavior of such systems and make sense of it. In a recent article, Wiggins and and García-Garrido call it [a method for] *painting the phase portrait* (of a dynamical system) (see [S. Wiggins and V. J. García-Garrido, Painting the Phase Portrait of a Dynamical System with the Computational Tool of Lagrangian Descriptors (AMS Notices, June/July 2022)](https://www.ams.org/journals/notices/202206/noti2489/noti2489.html?adat=June/July%202022&trk=2489&galt=none&cat=feature&pdfissue=202206&pdffile=rnoti-p936.pdf).
+The dynamics of evolutionary systems can be quite intricate. The method of **Lagrangian Descriptors** helps to visualize the complicated behavior of such systems and make sense of it. In a recent article, [WigginsGarciaGarrido2022](@citet) call it [a method for] *painting the phase portrait* (of a dynamical system).
 
 The image above, for instance, shows the dynamics of a periodically-forced Duffing equation, with a particular combination of parameters and near time $t=0$.
 
@@ -14,7 +14,7 @@ The image above, for instance, shows the dynamics of a periodically-forced Duffi
 
 Here is the code that generates the background of the image above, displaying some dynamic features of the Duffing equation.
 
-```julia
+```@example index
 using OrdinaryDiffEq, Plots
 using LinearAlgebra: norm
 using LagrangianDescriptors
@@ -36,11 +36,16 @@ uu0 = [[x, y] for y in range(-1.5, -0.5, length=301), x in range(-0.4, 1.6, leng
 lagprob = LagrangianDescriptorProblem(prob, M, uu0)
 
 lagsol = solve(lagprob, Tsit5())
+
+plot(lagsol)
+savefig("duffing_example.png"); nothing # hide
 ```
+
+![Lagrangian descriptors of the forced Duffing equation](duffing_example.png)
 
 ## Method
 
-The method is akin to droping colored ink in a fluid flow, tracking the dye as it is transported by the flow, and revealing the pattern created after a certain period of time. The difference being that the color doesn't get diffused as in a real fluid, so the image doesn't get blurred and one gets a clearer picture.
+The method is akin to dropping colored ink in a fluid flow, tracking the dye as it is transported by the flow, and revealing the pattern created after a certain period of time. The difference being that the color doesn't get diffused as in a real fluid, so the image doesn't get blurred and one gets a clearer picture.
 
 It is similar to drawing a phase portrait, which displays a collection of orbits, but in this method each orbit is painted according to its dynamic behavior, better revealing the overall picture.
 
@@ -58,7 +63,7 @@ If $t_f < t_0$, so that $u=u(t)$ is a "backward" solution from $t_0$, then we ob
 L_{\mathrm{bwd}} = \int_{t_f}^{t_0} M(t, u(t)) \;\mathrm{d}t = - \int_{t_0}^{t_f} M(t, u(t)) \;\mathrm{d}t.
 ```
 
-Since the system might be non-autonomous, these Lagragians descriptors are referred as descriptors **near ``t_0``**.
+Since the system might be non-autonomous, these Lagrangian descriptors are referred to as descriptors **near ``t_0``**.
 
 ## Approach
 
@@ -115,30 +120,27 @@ More precisely, the implementation works as follows:
     1. `direction`: the direction chosen, which defaults to `:both`, but can be also `:forward` or `:backward`;
     1. `terminated`: which trajectories were stopped early by the keyword `max_trajectory_value` of `solve`;
     1. `retcodes`: the solver's return code of each trajectory, to detect trajectories that did not finish normally (e.g. with `.!SciMLBase.successful_retcode.(lagsol.retcodes)`).
-1. Finally, one can use `plot` to visualize either the forward, or the backward, or the sum (total), or even the difference, of the forward and backward Lagrangian descriptor, via a plot recipe for the `LagrangianDescriptorSolution`, i.e. by calling `plot(lagsol)` or `plot(lagsol, direction)`, where `direction` is either `:forward`, `:backward`, `:total` or `:difference`.
+1. Finally, one can use `plot` to visualize either the forward, or the backward, or the sum (total), or even the difference, of the forward and backward Lagrangian descriptor, via a plot recipe for the `LagrangianDescriptorSolution`, i.e. by calling `plot(lagsol)` or `plot(lagsol, direction)`, where `direction` is either `:forward`, `:backward`, `:total` or `:difference`, with either Plots.jl or Makie.jl.
 
 ## Current state
 
-The package is still in an embrionary phase and currently accepts differential equations of the type `ODEProblem` and `RODEProblem`. Problems of the type `SDEProblem` will be implemented soon. Other problems will come eventually.
+The package is still in an embryonic phase and currently accepts differential equations of the type `ODEProblem`, `RODEProblem`, and `SDEProblem`. Other problems will come eventually.
 
-The plot recipe works for some types of collections of initial conditions (e.g. a `AbstractVector{<:Number}`, for scalar problems, and `AbstractMatrix{<:AbstractVector{<:Number}}` with the `AbstractVector` of length two, for two-dimensional problems). More general and flexible plot recipes will also be implemented.
+Besides the Lagrangian descriptors given by the time integral of an infinitesimal descriptor `M`, the package implements the descriptor given by the sum of the `p`-th powers of the increments of the solution over a time grid, introduced for stochastic equations by [BalibreaIniestaEtAl2016](@citet), via [`IncrementDescriptor`](@ref). For random and stochastic equations, the mean of the descriptors over many realizations of the noise is obtained with the keyword `realizations` of [`solve`](@ref LagrangianDescriptors.solve), and the keyword `shared_noise` gives the same noise path to all initial conditions.
+
+The solutions can be plotted with Plots.jl or with Makie.jl, as heatmaps for grids of initial conditions, as scatter plots for other collections of initial conditions, and as lines for scalar problems, and for any two components of higher-dimensional problems (see the API section on plotting).
 
 ## Roadmap
 
 What is currently missing:
-1. Support for other types of problems, such as `SDEProblem`, mixed differential-algebraic equations, etc.;
-1. A more flexible plot recipe;
-1. Improve the documentation with more examples;
+1. Support for other types of problems, such as mixed differential-algebraic equations, etc.;
 1. Maybe an adaptive method to refine the set `uu0` of initial conditions!;
 1. I don't know whether/how the idea applies to delay type equations, but we should check that out.
 1. Register the package.
 
-## References
+## Further reading
 
-* [Painting the Phase Portrait of a Dynamical System with the Computational Tool of Lagrangian Descriptors](https://www.ams.org/journals/notices/202206/noti2489/noti2489.html?adat=June/July%202022&trk=2489&galt=none&cat=feature&pdfissue=202206&pdffile=rnoti-p936.pdf)
-* [Lagrangian descriptors: A method for revealing phase space structures of general time dependent dynamical systems](https://www.sciencedirect.com/science/article/abs/pii/S1007570413002037)
-* [Lagrangian Descriptors - *Discovery and Quantification of Phase Space Structure and Transport*](https://champsproject.github.io/lagrangian_descriptors/docs/authors.html)
-* [Frequently Asked Questions about Lagrangian Descriptors](https://acp.copernicus.org/preprints/acp-2016-633/acp-2016-633-SC2-supplement.pdf)
+The literature on the method of Lagrangian descriptors is listed in the [References](references.md).
 
 ## Developers
 

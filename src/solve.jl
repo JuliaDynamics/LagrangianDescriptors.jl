@@ -1,48 +1,59 @@
 """
-    solve(prob::LagrangianDescriptorProblem, alg, args...; max_trajectory_value::Real=Inf, kwargs...)
+    solve(prob::LagrangianDescriptorProblem, alg, args...; max_trajectory_value = Inf, realizations = 1, shared_noise = false, kwargs...)
 
-Solve a [`LagrangianDescriptorProblem`](@ref), which amounts to solving the associated `EnsembleProblem` in `prob.ensprob` and returning a [`LagrangianDescriptorSolution`](@ref).
+Solve a [`LagrangianDescriptorProblem`](@ref), returning a
+[`LagrangianDescriptorSolution`](@ref).
 
-You should provide the necessary `args` and the desired `kwargs` for solving the associated ensemble problem for the underlying Differential Equation problem.
+Each initial condition in `prob.uu0` is solved with the algorithm `alg`, as one trajectory of
+the ensemble problem `prob.ensprob`. The remaining positional arguments `args` and keyword
+arguments `kwargs` are passed on to the ensemble solve, and so to the solve of each
+trajectory. For instance, an ensemble algorithm, such as `EnsembleThreads()` (the default),
+`EnsembleSerial()` or `EnsembleDistributed()`, can be given after `alg`, and tolerances
+(`abstol`, `reltol`), a time step (`dt`), or a `callback` are given as keyword arguments. The
+number of trajectories is set from `prob.uu0` and `realizations`.
 
-## Keyword Arguments
+## Keyword arguments
 
-- `max_trajectory_value::Real=Inf`: Maximum allowed value for trajectory components. When any
-  component of the trajectory exceeds this threshold, the integration is terminated early.
-  This is useful for dissipative systems where backward integration may diverge.
-  The Lagrangian descriptor value accumulated up to termination is preserved.
+- `max_trajectory_value::Real = Inf`: if finite, the forward and the backward solutions are
+  each stopped as soon as the absolute value of any of their components exceeds it. This is
+  useful for systems whose solutions diverge, e.g. dissipative systems backward in time. The
+  two directions are treated separately: a direction that is stopped keeps the Lagrangian
+  descriptor accumulated up to then, while the other direction goes on. The stopped
+  directions are marked in the fields `terminated_forward` and `terminated_backward` of the
+  solution, and `terminated` marks the trajectories with any stopped direction.
+- `realizations::Integer = 1`: the number of times each initial condition is solved. For
+  random or stochastic equations, each realization has different noise, and the solution
+  gives the mean of the Lagrangian descriptors over the realizations, as in Balibrea-Iniesta,
+  Lopesino, Wiggins and Mancho (2016). The return codes and the `terminated` flags of the
+  solution are kept for each of the `realizations * length(prob.uu0)` solves.
+- `shared_noise::Bool = false`: for an `SDEProblem` or a `RODEProblem`, whether all initial
+  conditions of a realization share the same noise path, as in the definition of the
+  Lagrangian descriptors of stochastic equations of Balibrea-Iniesta, Lopesino, Wiggins and
+  Mancho (2016), for a fixed realization of the noise. By default, each initial condition has
+  independent noise. If the problem has a `seed`, the noise is reproducible in both cases.
+
+## Examples
+
+```julia
+lagsol = solve(lagprob, Tsit5())                          # an ODE problem
+lagsol = solve(lagprob, Tsit5(), EnsembleSerial(); abstol = 1e-8, reltol = 1e-8)
+lagsol = solve(lagprob, Tsit5(); max_trajectory_value = 1e3)
+lagsol = solve(lagprob, RandomHeun(), dt = 1 / 100)       # a RODE problem
+lagsol = solve(lagprob, SOSRI(); realizations = 50)       # an SDE problem
+lagsol = solve(lagprob, EM(), dt = 0.01; shared_noise = true, realizations = 10)
+```
 """
-function solve(prob::LagrangianDescriptorProblem, alg, args...; max_trajectory_value::Real=Inf, kwargs...)
-    # This first solve was a hack on 1.7.2 rosetta; otherwise the subsequente solve would hang
-    # But it is not needed on mac native and probably not on other systems as well
-    # solve(prob.ensprob.prob, alg; kwargs...)
-
-    if isfinite(max_trajectory_value)
-        # Build termination callback based on direction
-        condition = _make_termination_condition(prob.direction, max_trajectory_value)
-        affect!(integrator) = terminate!(integrator)
-        cb = DiscreteCallback(condition, affect!)
-
-        # Merge with any existing callbacks
-        existing_cb = get(kwargs, :callback, nothing)
-        merged_cb = existing_cb === nothing ? cb : CallbackSet(existing_cb, cb)
-        kwargs = merge(NamedTuple(kwargs), (callback=merged_cb,))
-    end
-
-    sol = solve(prob.ensprob, alg, args...; trajectories = length(prob.uu0), kwargs...)
+function solve(
+        prob::LagrangianDescriptorProblem, alg, args...;
+        max_trajectory_value::Real = Inf, realizations::Integer = 1, shared_noise::Bool = false,
+        kwargs...,
+    )
+    realizations ≥ 1 || throw(
+        ArgumentError("The number of `realizations` must be positive; got `$realizations`."),
+    )
+    ensprob = _ensemble_problem(prob.prob, prob.M, prob.uu0, prob.direction;
+        vmax = max_trajectory_value, shared_noise)
+    trajectories = realizations * length(prob.uu0)
+    sol = solve(ensprob, alg, args...; trajectories, kwargs...)
     return LagrangianDescriptorSolution(sol, prob.uu0, prob.direction)
-end
-
-# Internal helper: create a termination condition function that checks if
-# trajectory components exceed `max_val`, for the given `direction`.
-function _make_termination_condition(direction::Symbol, max_val::Real)
-    if direction == :both
-        return (u, t, integrator) -> maximum(abs, u.fwd) > max_val || maximum(abs, u.bwd) > max_val
-    elseif direction == :forward
-        return (u, t, integrator) -> maximum(abs, u.fwd) > max_val
-    elseif direction == :backward
-        return (u, t, integrator) -> maximum(abs, u.bwd) > max_val
-    else
-        error("Unknown direction: $direction")
-    end
 end

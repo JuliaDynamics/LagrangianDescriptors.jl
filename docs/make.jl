@@ -1,16 +1,34 @@
-using Documenter
+# Draw the figures of the examples without opening windows (GR's headless mode), unless set
+# otherwise; this must be set before the first plot
+ENV["GKSwstype"] = get(ENV, "GKSwstype", "100")
+
+using Documenter, DocumenterCitations
 using LagrangianDescriptors
+
+bib = CitationBibliography(joinpath(@__DIR__, "src", "refs.bib"); style = :authoryear)
 
 makedocs(
     sitename = "LagrangianDescriptors.jl",
     pages = [
         "Overview" => "index.md"
+        "Choosing the descriptor and the time window" => "choosing.md"
         "Tutorials" => [
             "ODEs" => "tutorial_ODEs.md",
             "RODEs" => "tutorial_RODEs.md",
             "Alternative via post-processing" => "postprocessing.md"
         ]
+        "Examples" => [
+            "Overview" => "examples/index.md",
+            "Saddle point" => "examples/saddle.md",
+            "Pendulum" => "examples/pendulum.md",
+            "Van der Pol oscillator" => "examples/vanderpol.md",
+            "Double gyre" => "examples/doublegyre.md",
+            "Lorenz system" => "examples/lorenz.md",
+            "Double pendulum" => "examples/doublependulum.md",
+            "Stochastic Duffing equation" => "examples/stochastic_duffing.md",
+        ]
         "API" => "api.md"
+        "References" => "references.md"
     ],
     authors = "Ricardo Rosa",
     format = Documenter.HTML(;
@@ -19,6 +37,7 @@ makedocs(
         edit_link = "main",
     ),
     modules = [LagrangianDescriptors],
+    plugins = [bib],
 )
 
 if get(ENV, "CI", nothing) == "true" || get(ENV, "GITHUB_TOKEN", nothing) !== nothing

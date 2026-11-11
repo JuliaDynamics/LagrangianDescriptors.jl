@@ -35,7 +35,7 @@ include("build_docs_with_style.jl")
 
 using DocumenterCitations
 
-bib = CitationBibliography(joinpath(@__DIR__, "src", "refs.bib"); style = :authoryear)
+bib = CitationBibliography(joinpath(@__DIR__, "refs.bib"); style = :authoryear)
 
 build_docs_with_style(
     pages, LagrangianDescriptors;

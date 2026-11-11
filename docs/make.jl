@@ -1,56 +1,51 @@
+cd(@__DIR__)
+
 # Draw the figures of the examples without opening windows (GR's headless mode), unless set
 # otherwise; this must be set before the first plot
 ENV["GKSwstype"] = get(ENV, "GKSwstype", "100")
 
-using Documenter, DocumenterCitations
 using LagrangianDescriptors
+
+pages = [
+    "Overview" => "index.md",
+    "Choosing the descriptor and the time window" => "choosing.md",
+    "Tutorials" => [
+        "ODEs" => "tutorial_ODEs.md",
+        "RODEs" => "tutorial_RODEs.md",
+        "Alternative via post-processing" => "postprocessing.md",
+    ],
+    "Examples" => [
+        "Overview" => "examples/index.md",
+        "Saddle point" => "examples/saddle.md",
+        "Pendulum" => "examples/pendulum.md",
+        "Van der Pol oscillator" => "examples/vanderpol.md",
+        "Double gyre" => "examples/doublegyre.md",
+        "Lorenz system" => "examples/lorenz.md",
+        "Double pendulum" => "examples/doublependulum.md",
+        "Stochastic Duffing equation" => "examples/stochastic_duffing.md",
+    ],
+    "API" => "api.md",
+    "References" => "references.md",
+]
+
+# The documentation style of JuliaDynamics: https://github.com/JuliaDynamics/doctheme
+import Downloads
+Downloads.download(
+    "https://raw.githubusercontent.com/JuliaDynamics/doctheme/master/build_docs_with_style.jl",
+    joinpath(@__DIR__, "build_docs_with_style.jl")
+)
+include("build_docs_with_style.jl")
+
+using DocumenterCitations
 
 bib = CitationBibliography(joinpath(@__DIR__, "src", "refs.bib"); style = :authoryear)
 
-makedocs(
-    sitename = "LagrangianDescriptors.jl",
-    pages = [
-        "Overview" => "index.md"
-        "Choosing the descriptor and the time window" => "choosing.md"
-        "Tutorials" => [
-            "ODEs" => "tutorial_ODEs.md",
-            "RODEs" => "tutorial_RODEs.md",
-            "Alternative via post-processing" => "postprocessing.md"
-        ]
-        "Examples" => [
-            "Overview" => "examples/index.md",
-            "Saddle point" => "examples/saddle.md",
-            "Pendulum" => "examples/pendulum.md",
-            "Van der Pol oscillator" => "examples/vanderpol.md",
-            "Double gyre" => "examples/doublegyre.md",
-            "Lorenz system" => "examples/lorenz.md",
-            "Double pendulum" => "examples/doublependulum.md",
-            "Stochastic Duffing equation" => "examples/stochastic_duffing.md",
-        ]
-        "API" => "api.md"
-        "References" => "references.md"
-    ],
+build_docs_with_style(
+    pages, LagrangianDescriptors;
+    bib,
     authors = "Ricardo Rosa",
-    format = Documenter.HTML(;
-        prettyurls = get(ENV, "CI", "false") == "true",
-        canonical = "https://github.com/JuliaDynamics/LagrangianDescriptors.jl",
+    htmlkw = (
+        canonical = "https://juliadynamics.github.io/LagrangianDescriptors.jl/stable/",
         edit_link = "main",
     ),
-    modules = [LagrangianDescriptors],
-    plugins = [bib],
 )
-
-if get(ENV, "CI", nothing) == "true" || get(ENV, "GITHUB_TOKEN", nothing) !== nothing
-    deploydocs(
-        repo = "github.com/JuliaDynamics/LagrangianDescriptors.jl.git",
-        devbranch = "main",
-        forcepush = true,
-    )
-end
-
-# Documenter can also automatically deploy documentation to gh-pages.
-# See "Hosting Documentation" and deploydocs() in the Documenter manual
-# for more information.
-#=deploydocs(
-    repo = "<repository url>"
-)=#

@@ -51,3 +51,28 @@ fig, ax, plt = heatmap(lagsol_xz; idxs = (1, 3), axis = (title = "slice y = 0", 
 Colorbar(fig[1, 2], plt; label = "forward Lagrangian descriptor")
 fig
 ```
+
+The two slices can also be seen together in three dimensions, with three components in `idxs`, and a common `colorrange`, so that their colors are comparable. CairoMakie, however, draws each plot over the previous ones, without hiding the parts that should be behind, so we split each plane at the line where they intersect, here through the middle of both, and draw the four half-planes from the farthest to the nearest, for the default view of `Axis3`. (GLMakie and WGLMakie hide the parts behind by themselves.)
+
+```@example lorenz
+solve_forward(uu0) = solve(LagrangianDescriptorProblem(prob, M, uu0; direction = :forward), Tsit5())
+
+xs = range(-20, 20, length = 201)
+# the plane z = 27, split at y = 0, and the plane y = 0, split at z = 27
+back_of_z27 = solve_forward([[x, y, 27.0] for y in range(0, 27, length = 101), x in xs])
+front_of_z27 = solve_forward([[x, y, 27.0] for y in range(-27, 0, length = 101), x in xs])
+top_of_y0 = solve_forward([[x, 0.0, z] for z in range(27, 54, length = 101), x in xs])
+bottom_of_y0 = solve_forward([[x, 0.0, z] for z in range(0, 27, length = 101), x in xs])
+
+# from the farthest to the nearest
+halves = (back_of_z27, bottom_of_y0, top_of_y0, front_of_z27)
+colorrange = extrema(reduce(vcat, [lagsol() for lagsol in halves]))
+
+fig = Figure(size = (700, 550))
+ax = Axis3(fig[1, 1]; title = "slices z = 27 and y = 0", xlabel = "x", ylabel = "y", zlabel = "z", viewmode = :fit)
+plts = [plot!(ax, lagsol; idxs = (1, 2, 3), colorrange) for lagsol in halves]
+Colorbar(fig[1, 2], plts[1]; label = "forward Lagrangian descriptor")
+fig
+```
+
+Any of the half-planes can be hidden, e.g. with `plts[4].visible = false` for the front one, to see the ones behind it. The axis then only spans the visible ones, unless its limits are given, e.g. with `limits = ((-20, 20), (-27, 27), (0, 54))` in `Axis3`.

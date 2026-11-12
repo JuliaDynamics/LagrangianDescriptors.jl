@@ -134,7 +134,23 @@ using LinearAlgebra: norm
         @test _plot_data(lagsol, :both, (1, 2)).kind == :scatter # component 2 is constant
         @test plot(lagsol; idxs = (1, 3)).series_list[1][:seriestype] == :heatmap
         @test_throws ArgumentError plot(lagsol; idxs = (1, 4))
-        @test_throws ArgumentError plot(lagsol; idxs = (1, 2, 3))
+        @test_throws ArgumentError plot(lagsol; idxs = (1, 2, 4))
+        @test_throws ArgumentError plot(lagsol; idxs = (1,))
+
+        # three components: a surface, or a scatter plot for other collections; with Plots,
+        # both are drawn as a 3D scatter plot
+        data = _plot_data(lagsol, :forward, (3, 1, 2))
+        @test data.kind == :surface
+        @test size(data.x) == size(data.c) == (length(ys), length(xs))
+        @test data.x == [z for z in ys, x in xs] && data.y == [x for z in ys, x in xs]
+        @test vec(data.c) ≈ lagsol(:forward)
+        series = plot(lagsol; idxs = (1, 2, 3)).series_list[1]
+        @test series[:seriestype] == :scatter3d
+        @test series[:z] ≈ [z for z in ys, x in xs][:]
+        @test series[:marker_z] ≈ lagsol()
+        lagsol3 = solve(LagrangianDescriptorProblem(prob3, M, [[x, x^2, -x] for x in xs]), Tsit5())
+        @test _plot_data(lagsol3, :both, (1, 2, 3)).kind == :scatter3d
+        @test plot(lagsol3; idxs = (1, 2, 3)).series_list[1][:seriestype] == :scatter3d
 
         # one-component vectors are plotted like scalars
         lagsol = solve(LagrangianDescriptorProblem(ODEProblem((u, p, t) -> -u, [0.0], (0.0, 1.0)), M, [[x] for x in xs]), Tsit5())

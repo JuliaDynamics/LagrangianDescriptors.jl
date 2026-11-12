@@ -26,7 +26,6 @@ atomic(plt) = only(Makie.collect_atomic_plots(plt))
         # descriptor of the initial condition [x[l], y[k]]
         for uu0 in ([[x, y] for y in ys, x in xs], [[x, y] for x in xs, y in ys])
             lagsol = solve(LagrangianDescriptorProblem(prob, M, uu0), Tsit5())
-            @test Makie.plottype(lagsol) == Heatmap
             x, y, z = only(Makie.convert_arguments(Heatmap, lagsol, :forward)).args
             values = Dict(zip(vec(uu0), lagsol(:forward)))
             @test size(z) == (length(xs), length(ys))
@@ -47,8 +46,8 @@ atomic(plt) = only(Makie.collect_atomic_plots(plt))
 
     @testset "Scatter" begin
         lagsol = solve(LagrangianDescriptorProblem(prob, M, [[x, 0.3x] for x in xs]), Tsit5())
-        @test Makie.plottype(lagsol) == Scatter
         fig, ax, plt = Makie.plot(lagsol)
+        @test atomic(plt) isa Scatter
         @test_nowarn Colorbar(fig[1, 2], plt)
         fig, ax, plt = Makie.scatter(lagsol, :forward)
         scatterplot = atomic(plt)
@@ -68,16 +67,59 @@ atomic(plt) = only(Makie.collect_atomic_plots(plt))
         prob3 = ODEProblem(g!, zeros(3), (0.0, 1.0))
         lagsol = solve(LagrangianDescriptorProblem(prob3, M, [[x, 0.5, z] for z in ys, x in xs]), Tsit5())
         @test atomic(Makie.heatmap(lagsol; idxs = (1, 3)).plot) isa Heatmap
+        # the plot type depends on `idxs`: a heatmap of the components 1 and 3
+        fig, ax, plt = Makie.plot(lagsol; idxs = (1, 3))
+        @test atomic(plt) isa Heatmap
+        @test ax isa Axis
         @test_throws ArgumentError Makie.heatmap(lagsol; idxs = (1, 4))
+        @test_throws ArgumentError Makie.plot(lagsol; idxs = (1, 2, 4))
+    end
+
+    @testset "Three dimensions" begin
+        g! = function (du, u, p, t)
+            du[1] = u[2]
+            du[2] = -u[1]
+            du[3] = -u[3]
+        end
+        prob3 = ODEProblem(g!, zeros(3), (0.0, 1.0))
+        # a matrix of initial conditions: a surface, colored by the descriptor
+        uu0 = [[x, 0.5x, z] for z in ys, x in xs]
+        lagsol = solve(LagrangianDescriptorProblem(prob3, M, uu0), Tsit5())
+        fig, ax, plt = Makie.plot(lagsol; idxs = (1, 2, 3))
+        surf = atomic(plt)
+        @test surf isa Makie.Surface
+        @test ax isa Axis3
+        @test surf[1][] ≈ [u0[1] for u0 in uu0] && surf[3][] ≈ [u0[3] for u0 in uu0]
+        @test vec(surf.color[]) ≈ lagsol()
+        @test surf.colormap[] == :inferno
+        @test surf.shading[] == false
+        @test_nowarn Colorbar(fig[1, 2], plt)
+        @test atomic(Makie.surface(lagsol; idxs = (1, 2, 3), colormap = :viridis).plot).colormap[] == :viridis
+        # other plot functions plot the points
+        scatterplot = atomic(Makie.scatter(lagsol, :forward; idxs = (3, 1, 2)).plot)
+        @test scatterplot isa Scatter
+        @test first.(scatterplot[1][]) ≈ [u0[3] for u0 in uu0][:]
+        @test scatterplot.color[] ≈ lagsol(:forward)
+        # any other collection of initial conditions: a scatter plot
+        lagsol = solve(LagrangianDescriptorProblem(prob3, M, [[x, x^2, -x] for x in xs]), Tsit5())
+        fig, ax, plt = Makie.plot(lagsol; idxs = (1, 2, 3))
+        @test atomic(plt) isa Scatter
+        @test ax isa Axis3
+        @test last.(atomic(plt)[1][]) ≈ -xs
+        @test atomic(Makie.lines(lagsol; idxs = (1, 2, 3)).plot) isa Lines
+        # several solutions on the same axis
+        fig = Figure()
+        ax = Axis3(fig[1, 1])
+        @test_nowarn Makie.plot!(ax, lagsol; idxs = (1, 2, 3))
+        @test_nowarn Makie.plot!(ax, lagsol; idxs = (2, 1, 3))
     end
 
     @testset "Scalar" begin
         lagsol = solve(LagrangianDescriptorProblem(ODEProblem((u, p, t) -> -u, 0.0, (0.0, 1.0)), M, collect(xs)), Tsit5())
-        @test Makie.plottype(lagsol) == Lines
         fig, ax, plt = Makie.plot(lagsol)
-        @test plt isa Lines
-        @test first.(plt[1][]) ≈ xs
-        @test last.(plt[1][]) ≈ lagsol()
-        @test Makie.scatter(lagsol, :forward).plot isa Scatter
+        @test atomic(plt) isa Lines
+        @test first.(atomic(plt)[1][]) ≈ xs
+        @test last.(atomic(plt)[1][]) ≈ lagsol()
+        @test atomic(Makie.scatter(lagsol, :forward).plot) isa Scatter
     end
 end

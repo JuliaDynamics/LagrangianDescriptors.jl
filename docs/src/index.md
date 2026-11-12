@@ -51,7 +51,7 @@ The package is still in an embryonic phase and currently accepts differential eq
 
 Besides the Lagrangian descriptors given by the time integral of an infinitesimal descriptor `M`, the package implements the descriptor given by the sum of the `p`-th powers of the increments of the solution over a time grid, introduced for stochastic equations by [BalibreaIniestaEtAl2016](@citet), via [`IncrementDescriptor`](@ref). For random and stochastic equations, the mean of the descriptors over many realizations of the noise is obtained with the keyword `realizations` of [`solve`](@ref LagrangianDescriptors.solve), and the keyword `shared_noise` gives the same noise path to all initial conditions.
 
-The solutions can be plotted with Plots.jl or with Makie.jl, as heatmaps for grids of initial conditions, as scatter plots for other collections of initial conditions, and as lines for scalar problems, and for any two components of higher-dimensional problems (see the API section on plotting).
+The solutions can be plotted with Plots.jl or with Makie.jl, as heatmaps for grids of initial conditions, as scatter plots for other collections of initial conditions, and as lines for scalar problems, for any two components of higher-dimensional problems, or in three dimensions, e.g. as surfaces of initial conditions (see [Plotting](@ref plotting)).
 
 What is currently missing:
 1. Support for other types of problems, such as mixed differential-algebraic equations, etc.;

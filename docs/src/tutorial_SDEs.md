@@ -4,12 +4,12 @@ We consider, now, an example of applying the Lagrangian descriptor method to equ
 
 ## Duffing equation with multiplicative noise
 
-We consider the Duffing equation with a multiplicative noise in the velocity,
+We consider the Duffing equation with a multiplicative noise in the velocity, proportional to the cube root of the position,
 
 ```math
 \begin{cases}
   \mathrm{d}x = y \,\mathrm{d}t, \\
-  \mathrm{d}y = (x - x^3) \,\mathrm{d}t + \sigma x \,\mathrm{d}W_t,
+  \mathrm{d}y = (x - x^3) \,\mathrm{d}t + \sigma x^{1/3} \,\mathrm{d}W_t,
 \end{cases}
 ```
 
@@ -37,10 +37,10 @@ end
 
 function g!(du, u, σ, t)
     du[1] = 0.0
-    du[2] = σ * u[1]
+    du[2] = σ * cbrt(u[1]) # the real cube root, also for negative values
 end
 
-σ = 0.2
+σ = 0.05
 u0 = [0.0, 0.0]
 tspan = (0.0, 5.0)
 
@@ -74,7 +74,7 @@ end
 fig
 ```
 
-The forward descriptors show the stable manifold of the saddle point, and the backward ones its unstable manifold, as for the deterministic equation, while the noise, independent from one initial condition to the next, makes the pictures grainy.
+The forward descriptors show the stable manifold of the saddle point, and the backward ones its unstable manifold, as for the deterministic equation, while the noise, independent from one initial condition to the next, makes the pictures slightly grainy.
 
 ## A single realization of the noise
 
@@ -92,6 +92,6 @@ heatmap!(ax, lagsol_mean)
 fig
 ```
 
-For a single realization, the saddle point stays at the origin, where the noise vanishes, while the homoclinic loops are deformed by the noise, differently in each realization. Their mean shows the structures shared by the realizations.
+For a single realization, the saddle point stays at the origin, where the noise vanishes, while the homoclinic loops are slightly deformed by the noise, differently in each realization. Their mean shows the structures shared by the realizations.
 
 See also the [Stochastic Duffing equation](@ref) example, with additive noise, and the descriptor of [BalibreaIniestaEtAl2016](@citet), given by the increments of the solutions, available as [`IncrementDescriptor`](@ref).

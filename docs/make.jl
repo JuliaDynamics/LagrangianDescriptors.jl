@@ -13,6 +13,7 @@ pages = [
     "Tutorials" => [
         "ODEs" => "tutorial_ODEs.md",
         "RODEs" => "tutorial_RODEs.md",
+        "SDEs" => "tutorial_SDEs.md",
         "Alternative via post-processing" => "postprocessing.md",
     ],
     "Plotting" => "plotting.md",

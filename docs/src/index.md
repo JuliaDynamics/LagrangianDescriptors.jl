@@ -8,7 +8,7 @@ LagrangianDescriptors
 
 - [The method of Lagrangian descriptors](@ref method) explains the method and how the package computes the descriptors.
 - [Choosing the descriptor and the time window](choosing.md) shows the effect of the choices that shape the pictures, with some guidance on them.
-- The tutorials on [ordinary](tutorial_ODEs.md) and [random](tutorial_RODEs.md) differential equations go through the use of the package step by step, and [Alternative via post-processing](postprocessing.md) compares it with computing the descriptors from solutions of the original equations.
+- The tutorials on [ordinary](tutorial_ODEs.md), [random](tutorial_RODEs.md) and [stochastic](tutorial_SDEs.md) differential equations go through the use of the package step by step, and [Alternative via post-processing](postprocessing.md) compares it with computing the descriptors from solutions of the original equations.
 - The [Examples](examples/index.md) show the method on classical systems, from simple ones to chaotic and stochastic ones.
 - The [API](api.md) documents all functions and types.
 - The [References](references.md) list the literature on the method.

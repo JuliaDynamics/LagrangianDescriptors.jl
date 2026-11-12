@@ -12,4 +12,4 @@ A gallery of examples of the method of Lagrangian descriptors, from simple syste
 | [Double pendulum](doublependulum.md) | four-dimensional chaotic Hamiltonian system |
 | [Stochastic Duffing equation](stochastic_duffing.md) | stochastic differential equation; a single realization and the mean over realizations |
 
-The periodically forced Duffing equation and a random Duffing equation are treated step by step in the tutorials on [ODEs](../tutorial_ODEs.md) and [RODEs](../tutorial_RODEs.md). For the choice of the infinitesimal descriptor, the time window and the grid of initial conditions, see [Choosing the descriptor and the time window](../choosing.md).
+The periodically forced Duffing equation, a random Duffing equation and a Duffing equation with multiplicative noise are treated step by step in the tutorials on [ODEs](../tutorial_ODEs.md), [RODEs](../tutorial_RODEs.md) and [SDEs](../tutorial_SDEs.md). For the choice of the infinitesimal descriptor, the time window and the grid of initial conditions, see [Choosing the descriptor and the time window](../choosing.md).

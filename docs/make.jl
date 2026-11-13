@@ -46,8 +46,12 @@ bib = CitationBibliography(joinpath(@__DIR__, "refs.bib"); style = :authoryear)
 build_docs_with_style(
     pages, LagrangianDescriptors;
     bib,
-    # the stable documentation only exists after the first release
-    linkcheck_ignore = [r"^https://juliadynamics\.github\.io/LagrangianDescriptors\.jl/stable/?$"],
+    linkcheck_ignore = [
+        # the stable documentation only exists after the first release
+        r"^https://juliadynamics\.github\.io/LagrangianDescriptors\.jl/stable/?$",
+        # GitHub rate-limits the check of this page, with status 429, although it exists
+        r"^https://github\.com/JuliaDynamics/LagrangianDescriptors\.jl/blob/main/LICENSE$",
+    ],
     # the style's default timeout of 2 seconds is too short for some sites on the CI
     linkcheck_timeout = 10,
     authors = "Ricardo Rosa",

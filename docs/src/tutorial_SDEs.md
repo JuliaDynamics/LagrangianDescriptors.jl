@@ -2,18 +2,18 @@
 
 We consider, now, an example of applying the Lagrangian descriptor method to equations of the type `SDEProblem`.
 
-## Duffing equation with multiplicative noise
+## Duffing equation with additive noise
 
-We consider the Duffing equation with a multiplicative noise in the velocity, proportional to the cube root of the position,
+We consider the Duffing equation with an additive noise in the velocity,
 
 ```math
 \begin{cases}
   \mathrm{d}x = y \,\mathrm{d}t, \\
-  \mathrm{d}y = (x - x^3) \,\mathrm{d}t + \sigma x^{1/3} \,\mathrm{d}W_t,
+  \mathrm{d}y = (x - x^3) \,\mathrm{d}t + \sigma \,\mathrm{d}W_t,
 \end{cases}
 ```
 
-where ``\{W_t\}_t`` is a standard Wiener process. The noise vanishes on the line ``x = 0``, so the origin is still an equilibrium, a saddle point, as in the deterministic equation, while the other structures are perturbed by the noise.
+where ``\{W_t\}_t`` is a standard Wiener process and ``\sigma`` is the intensity of the noise. Without the noise, the origin is a saddle point, whose stable and unstable manifolds form two homoclinic loops around the centers ``(\pm 1, 0)``.
 
 With `LagrangianDescriptors.jl`, we i) start by setting up the equation as an `SDEProblem`; next, we ii) wrap that as a `LagrangianDescriptorProblem`; then we iii) `solve` it; and finally, we iv) plot the result with the built-in plot recipe.
 
@@ -37,7 +37,7 @@ end
 
 function g!(du, u, σ, t)
     du[1] = 0.0
-    du[2] = σ * cbrt(u[1]) # the real cube root, also for negative values
+    du[2] = σ
 end
 
 σ = 0.05
@@ -92,6 +92,6 @@ heatmap!(ax, lagsol_mean)
 fig
 ```
 
-For a single realization, the saddle point stays at the origin, where the noise vanishes, while the homoclinic loops are slightly deformed by the noise, differently in each realization. Their mean shows the structures shared by the realizations.
+For a single realization, the saddle point and the homoclinic loops are slightly moved and deformed by the noise, differently in each realization. Their mean shows the structures shared by the realizations.
 
-See also the [Stochastic Duffing equation](@ref) example, with additive noise, and the descriptor of [BalibreaIniestaEtAl2016](@citet), given by the increments of the solutions, available as [`IncrementDescriptor`](@ref).
+See also the [Stochastic Duffing equation](@ref) example, with a multiplicative noise that keeps the saddle point in place, and the descriptor of [BalibreaIniestaEtAl2016](@citet), given by the increments of the solutions, available as [`IncrementDescriptor`](@ref).

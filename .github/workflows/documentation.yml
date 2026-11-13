@@ -21,7 +21,7 @@ jobs:
       pull-requests: read # for preview builds
       statuses: write     # to set the docs status check
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@v3
         with:
           version: '1'

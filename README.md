@@ -14,7 +14,7 @@ LagrangianDescriptors.jl is a Julia package for *painting the phase portrait* of
 - Descriptors given by the integral of any infinitesimal descriptor along the solutions, or by the increments of the solutions, as for stochastic equations.
 - Means over realizations of the noise, with independent noise for each initial condition, or with the same noise path for all of them.
 - Stopping solutions that diverge, separately in each direction of time.
-- Plots with [Plots.jl](https://github.com/JuliaPlots/Plots.jl) or [Makie.jl](https://docs.makie.org), as heatmaps of grids of initial conditions, scatter plots of other collections, or two-dimensional slices of higher-dimensional systems.
+- Plots with [Plots.jl](https://github.com/JuliaPlots/Plots.jl) or [Makie.jl](https://docs.makie.org), as heatmaps of grids of initial conditions, scatter plots of other collections, two-dimensional slices of higher-dimensional systems, or in three dimensions, e.g. as surfaces of initial conditions.
 
 The package is not registered yet. To install it, run `import Pkg; Pkg.add(url = "https://github.com/JuliaDynamics/LagrangianDescriptors.jl")`.
 

@@ -51,3 +51,82 @@ fig, ax, plt = heatmap(lagsol_xz; idxs = (1, 3), axis = (title = "slice y = 0", 
 Colorbar(fig[1, 2], plt; label = "forward Lagrangian descriptor")
 fig
 ```
+
+The two slices can also be seen together in three dimensions, with three components in `idxs`, and a common `colorrange`, so that their colors are comparable. CairoMakie, however, draws each plot over the previous ones, without hiding the parts that should be behind, so we split each plane at the line where they intersect, here through the middle of both, and draw the four half-planes from the farthest to the nearest, for the default view of `Axis3`. (GLMakie and WGLMakie hide the parts behind by themselves.)
+
+```@example lorenz
+solve_forward(uu0) = solve(LagrangianDescriptorProblem(prob, M, uu0; direction = :forward), Tsit5())
+
+xs = range(-20, 20, length = 201)
+# the plane z = 27, split at y = 0, and the plane y = 0, split at z = 27
+back_of_z27 = solve_forward([[x, y, 27.0] for y in range(0, 27, length = 101), x in xs])
+front_of_z27 = solve_forward([[x, y, 27.0] for y in range(-27, 0, length = 101), x in xs])
+top_of_y0 = solve_forward([[x, 0.0, z] for z in range(27, 54, length = 101), x in xs])
+bottom_of_y0 = solve_forward([[x, 0.0, z] for z in range(0, 27, length = 101), x in xs])
+
+# from the farthest to the nearest
+halves = (back_of_z27, bottom_of_y0, top_of_y0, front_of_z27)
+colorrange = extrema(reduce(vcat, [lagsol() for lagsol in halves]))
+
+fig = Figure(size = (700, 550))
+ax = Axis3(fig[1, 1]; title = "slices z = 27 and y = 0", xlabel = "x", ylabel = "y", zlabel = "z", viewmode = :fit)
+plts = [plot!(ax, lagsol; idxs = (1, 2, 3), colorrange) for lagsol in halves]
+Colorbar(fig[1, 2], plts[1]; label = "forward Lagrangian descriptor")
+fig
+```
+
+Any of the half-planes can be hidden, e.g. with `plts[4].visible = false` for the front one, to see the ones behind it. The axis then only spans the visible ones, unless its limits are given, e.g. with `limits = ((-20, 20), (-27, 27), (0, 54))` in `Axis3`.
+
+## Initial conditions on the wings of the attractor
+
+The initial conditions need not be on a plane. Each wing of the Lorenz attractor is close to a plane, and the two planes meet along a line below the attractor, forming an inverted wedge. We find these planes from a long solution on the attractor: the plane of each wing passes through the mean of its points, and its normal is the direction in which they vary the least, given by a singular value decomposition.
+
+```@example lorenz
+using LinearAlgebra: svd, normalize, cross, dot
+
+# a long solution on the attractor, without its transient
+sol = solve(remake(prob; u0 = [1.0, 1.0, 1.0], tspan = (0.0, 100.0)), Tsit5(); saveat = 0.01)
+points = sol.u[sol.t .> 10]
+points_pos = filter(u -> u[1] > 0, points) # the wing with x > 0
+points_neg = filter(u -> u[1] < 0, points) # the wing with x < 0
+
+# the plane of a wing, through the mean `c` of its points, with normal `n`
+function wing_plane(points)
+    c = sum(points) / length(points)
+    n = svd(reduce(hcat, points .- Ref(c))').V[:, 3]
+    return (; c, n)
+end
+plane_pos = wing_plane(points_pos)
+plane_neg = wing_plane(points_neg)
+
+# the line where the two planes meet, through `o` in the direction `d`
+d = normalize(cross(plane_pos.n, plane_neg.n))
+o = [plane_pos.n'; plane_neg.n'; d'] \ [dot(plane_pos.n, plane_pos.c), dot(plane_neg.n, plane_neg.c), 0.0]
+```
+
+The two planes meet along the line through `o`, at the height ``z \approx 15``, in the horizontal direction `d`. On each plane, we take a grid of initial conditions starting at this line and covering the points of the wing, and we compute the forward descriptors:
+
+```@example lorenz
+# a grid on the plane of a wing, from the line where the planes meet, covering its points
+function wing_grid(plane, points)
+    w = normalize((plane.c - o) - dot(plane.c - o, d) * d) # in the plane, away from the line
+    along = extrema(dot(u - o, d) for u in points)
+    away = maximum(dot(u - o, w) for u in points)
+    return [o + a * d + b * w for b in range(0, away, length = 101), a in range(along..., length = 151)]
+end
+
+lagsol_pos = solve_forward(wing_grid(plane_pos, points_pos))
+lagsol_neg = solve_forward(wing_grid(plane_neg, points_neg))
+colorrange = extrema(vcat(lagsol_pos(), lagsol_neg()))
+
+fig = Figure(size = (1200, 650))
+axes = [Axis3(fig[1, k]; azimuth, elevation = 0.1π, aspect = :data, viewmode = :fit,
+        xlabel = "x", ylabel = "y", zlabel = "z", xticks = -20:20:20, yticks = -20:20:20)
+    for (k, azimuth) in enumerate((1.45π, 1.7π))]
+# from these views, the wing with x < 0 is the nearest, so it is drawn last
+plts = [plot!(ax, lagsol; idxs = (1, 2, 3), colorrange) for ax in axes for lagsol in (lagsol_pos, lagsol_neg)]
+Colorbar(fig[1, 3], plts[1]; label = "forward Lagrangian descriptor")
+fig
+```
+
+On each wing, the dark spot is the fixed point of that wing, and the descriptors show the folds of the stable manifold of the origin crossing the wing, around which the solutions turn before switching to the other wing.

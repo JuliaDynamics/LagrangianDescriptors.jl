@@ -8,7 +8,7 @@ LagrangianDescriptors
 
 - [The method of Lagrangian descriptors](@ref method) explains the method and how the package computes the descriptors.
 - [Choosing the descriptor and the time window](choosing.md) shows the effect of the choices that shape the pictures, with some guidance on them.
-- The tutorials on [ordinary](tutorial_ODEs.md) and [random](tutorial_RODEs.md) differential equations go through the use of the package step by step, and [Alternative via post-processing](postprocessing.md) compares it with computing the descriptors from solutions of the original equations.
+- The tutorials on [ordinary](tutorial_ODEs.md), [random](tutorial_RODEs.md) and [stochastic](tutorial_SDEs.md) differential equations go through the use of the package step by step, and [Alternative via post-processing](postprocessing.md) compares it with computing the descriptors from solutions of the original equations.
 - The [Examples](examples/index.md) show the method on classical systems, from simple ones to chaotic and stochastic ones.
 - The [API](api.md) documents all functions and types.
 - The [References](references.md) list the literature on the method.
@@ -45,23 +45,9 @@ Colorbar(fig[1, 2], plt; label = "Lagrangian descriptor")
 fig
 ```
 
-## Current state and roadmap
-
-The package is still in an embryonic phase and currently accepts differential equations of the type `ODEProblem`, `RODEProblem`, and `SDEProblem`. Other problems will come eventually.
-
-Besides the Lagrangian descriptors given by the time integral of an infinitesimal descriptor `M`, the package implements the descriptor given by the sum of the `p`-th powers of the increments of the solution over a time grid, introduced for stochastic equations by [BalibreaIniestaEtAl2016](@citet), via [`IncrementDescriptor`](@ref). For random and stochastic equations, the mean of the descriptors over many realizations of the noise is obtained with the keyword `realizations` of [`solve`](@ref LagrangianDescriptors.solve), and the keyword `shared_noise` gives the same noise path to all initial conditions.
-
-The solutions can be plotted with Plots.jl or with Makie.jl, as heatmaps for grids of initial conditions, as scatter plots for other collections of initial conditions, and as lines for scalar problems, and for any two components of higher-dimensional problems (see the API section on plotting).
-
-What is currently missing:
-1. Support for other types of problems, such as mixed differential-algebraic equations, etc.;
-1. Maybe an adaptive method to refine the set `uu0` of initial conditions!;
-1. I don't know whether/how the idea applies to delay type equations, but we should check that out.
-1. Register the package.
-
 ## Developers
 
-[JuliaDynamics/LagrangianDescriptors.jl](https://github.com/JuliaDynamics/LagrangianDescriptors.jl) is currently being developed by [Ricardo M. S. Rosa](https://rmsrosa.github.io), but contributors are welcome.
+[JuliaDynamics/LagrangianDescriptors.jl](https://github.com/JuliaDynamics/LagrangianDescriptors.jl) is currently being developed by [Ricardo M. S. Rosa](https://rmsrosa.github.io).
 
 ## Cite
 

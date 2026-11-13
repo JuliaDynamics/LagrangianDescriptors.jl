@@ -8,6 +8,13 @@
 #   the descriptor, with `z[k, l]` at `(x[l], y[k])`;
 # - `kind = :scatter`: for any other collection of initial conditions, the components `x`
 #   and `y` of each initial condition, and the value `z` of the descriptor at each one.
+#
+# With three components `idxs = (i, j, k)`, for a three-dimensional plot:
+#
+# - `kind = :surface`: for a matrix of initial conditions, seen as a parametrized surface,
+#   the matrices `x`, `y` and `z` of these components, and the matrix `c` of the descriptor;
+# - `kind = :scatter3d`: for any other collection of initial conditions, the components `x`,
+#   `y` and `z` of each initial condition, and the value `c` of the descriptor at each one.
 
 function _plot_data(lagsol, direction::Symbol, idxs = (1, 2))
     _check_direction(direction, DESCRIPTOR_DIRECTIONS)
@@ -26,12 +33,13 @@ function _plot_data(lagsol, direction::Symbol, idxs = (1, 2))
     if n == 1
         return (kind = :path, x = [only(u0) for u0 in uu0][:], y = nothing, z = values)
     end
-    length(idxs) == 2 && all(i -> i isa Integer && 1 ≤ i ≤ n, idxs) || throw(
+    length(idxs) in (2, 3) && all(i -> i isa Integer && 1 ≤ i ≤ n, idxs) || throw(
         ArgumentError(
-            "`idxs` must be two indices of components of the initial conditions, " *
+            "`idxs` must be two or three indices of components of the initial conditions, " *
             "between 1 and $n; got `idxs = $idxs`.",
         ),
     )
+    length(idxs) == 3 && return _plot_data_3d(uu0, values, idxs)
     i, j = idxs
     if uu0 isa AbstractMatrix
         Z = reshape(values, size(uu0))
@@ -47,6 +55,15 @@ function _plot_data(lagsol, direction::Symbol, idxs = (1, 2))
         end
     end
     return (kind = :scatter, x = [u0[i] for u0 in uu0][:], y = [u0[j] for u0 in uu0][:], z = values)
+end
+
+function _plot_data_3d(uu0, values, (i, j, k))
+    if uu0 isa AbstractMatrix && size(uu0, 1) ≥ 2 && size(uu0, 2) ≥ 2
+        return (kind = :surface, x = [u0[i] for u0 in uu0], y = [u0[j] for u0 in uu0],
+            z = [u0[k] for u0 in uu0], c = reshape(values, size(uu0)))
+    end
+    return (kind = :scatter3d, x = [u0[i] for u0 in uu0][:], y = [u0[j] for u0 in uu0][:],
+        z = [u0[k] for u0 in uu0][:], c = values)
 end
 
 # Whether component `i` of the initial conditions only changes along the columns, and

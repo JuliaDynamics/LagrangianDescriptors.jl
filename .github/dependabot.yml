@@ -1,0 +1,14 @@
+# Keeps the actions of the workflows and the compat entries of the package up to date, with
+# pull requests to the `dev` branch
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "dev"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "julia"
+    directory: "/"
+    target-branch: "dev"
+    schedule:
+      interval: "weekly"

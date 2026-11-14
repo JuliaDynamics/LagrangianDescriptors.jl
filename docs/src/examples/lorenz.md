@@ -130,3 +130,73 @@ fig
 ```
 
 On each wing, the dark spot is the fixed point of that wing, and the descriptors show the folds of the stable manifold of the origin crossing the wing, around which the solutions turn before switching to the other wing.
+
+## Sweeping through the attractor
+
+Two sequences of slices sweep through the attractor: horizontal slices ``z = c``, for increasing values of ``c``, and then vertical slices ``x = c``, also for increasing values of ``c``. We compute the forward descriptors on each slice, with a common color range, so that the slices are comparable:
+
+```@example lorenz
+heights = 5:45     # the horizontal slices z = c
+abscissas = -20:20 # the vertical slices x = c
+xs = range(-20, 20, length = 151)
+ys = range(-25, 25, length = 151)
+zs = range(0, 50, length = 151)
+horizontal = [solve_forward([[x, y, c] for y in ys, x in xs]) for c in heights]
+vertical = [solve_forward([[c, y, z] for z in zs, y in ys]) for c in abscissas]
+colorrange = extrema(reduce(vcat, [lagsol() for lagsol in [horizontal; vertical]]))
+nothing # hide
+```
+
+We show them in a video, with each slice next to the attractor, cut by the plane of the slice. The current frame is an `Observable`, which updates the figure in each frame recorded with `record`, with a plane and a heatmap for the horizontal slices, and others for the vertical ones, shown in turn. Since CairoMakie draws each plot over the previous ones, the part of the attractor behind the plane is drawn before it, and the part in front of it after it, with `NaN` to break the lines:
+
+```@example lorenz
+# the frames: the horizontal slices, and then the vertical ones
+frames = [[(:z, i) for i in eachindex(heights)]; [(:x, i) for i in eachindex(abscissas)]]
+frame = Observable(frames[1])
+
+# seen from above and from x > c, behind a horizontal plane is below it, and behind
+# a vertical plane x = c is x < c
+is_behind((direction, i), u) = direction == :z ? u[3] <= heights[i] : u[1] <= abscissas[i]
+points_on_attractor = Point3f.(points) # from the long solution of the previous section
+behind = @lift([is_behind($frame, u) ? u : Point3f(NaN) for u in points_on_attractor])
+in_front = @lift([is_behind($frame, u) ? Point3f(NaN) : u for u in points_on_attractor])
+
+fig = Figure(size = (1000, 500))
+ax3 = Axis3(fig[1, 1]; title = "the attractor and the slice", xlabel = "x", ylabel = "y", zlabel = "z",
+    azimuth = 1.7π, elevation = 0.12π, viewmode = :fit, xticks = -20:20:20, yticks = -20:20:20)
+lines!(ax3, behind; color = :gray30, linewidth = 0.5)
+zplane = mesh!(ax3, @lift(Rect3f(Vec3f(-20, -25, heights[$frame[1] == :z ? $frame[2] : 1]), Vec3f(40, 50, 0.2)));
+    color = (:orange, 0.4), shading = false)
+xplane = mesh!(ax3, @lift(Rect3f(Vec3f(abscissas[$frame[1] == :x ? $frame[2] : 1], -25, 0), Vec3f(0.2, 50, 50)));
+    color = (:orange, 0.4), shading = false)
+lines!(ax3, in_front; color = :gray30, linewidth = 0.5)
+
+ax = Axis(fig[1, 2]; aspect = DataAspect(),
+    title = @lift($frame[1] == :z ? "slice z = $(heights[$frame[2]])" : "slice x = $(abscissas[$frame[2]])"),
+    xlabel = @lift($frame[1] == :z ? "x" : "y"), ylabel = @lift($frame[1] == :z ? "y" : "z"))
+zheatmap = heatmap!(ax, @lift(horizontal[$frame[1] == :z ? $frame[2] : 1]); colorrange)
+xheatmap = heatmap!(ax, @lift(vertical[$frame[1] == :x ? $frame[2] : 1]); idxs = (2, 3), colorrange)
+Colorbar(fig[1, 3], zheatmap; label = "forward Lagrangian descriptor")
+colgap!(fig.layout, 1, 50) # room between the z label of the 3D axis and the heatmap
+
+record(fig, "lorenz_sweeps.mp4", frames; framerate = 8, px_per_unit = 1) do f
+    frame[] = f
+    zplane.visible = zheatmap.visible = f[1] == :z
+    xplane.visible = xheatmap.visible = f[1] == :x
+    reset_limits!(ax)
+end
+# a small GIF of every other frame, for the README, with a palette suited to the video # hide
+ffmpeg = Makie.FFMPEG_jll.ffmpeg() # hide
+filters = "select='not(mod(n\\,2))',setpts=N/6/TB,scale=600:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=64:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle" # hide
+run(`$ffmpeg -loglevel error -y -i lorenz_sweeps.mp4 -vf $filters -r 6 lorenz_sweeps.gif`) # hide
+# the page is `lorenz.html` in local builds, and `lorenz/index.html` with pretty URLs # hide
+mkpath("lorenz") # hide
+foreach(file -> cp(file, joinpath("lorenz", file); force = true), ("lorenz_sweeps.mp4", "lorenz_sweeps.gif")) # hide
+nothing # hide
+```
+
+```@raw html
+<video src="lorenz_sweeps.mp4" autoplay loop muted playsinline controls style="width: 100%"></video>
+```
+
+At the bottom of the attractor, the horizontal slices cut the stable manifold of the origin, a surface containing the ``z`` axis, along a single curve through the origin. Going up, they cross the two wings, and the folds of this manifold wind around the dark regions of each wing, with the whole pattern turning as ``z`` increases. The vertical slices then cross the wings from the side, one after the other, with the dark region of each wing and the folds around it.

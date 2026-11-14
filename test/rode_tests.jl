@@ -8,6 +8,10 @@ using Statistics: cor
 using DiffEqNoiseProcess: WienerProcess
 using SciMLBase: EnsembleProblem
 
+# The integral of the values `vals` at the times `t` by the trapezoidal rule, which matches how
+# `RandomHeun` integrates the Lagrangian descriptors, so the comparisons can use a tight tolerance
+trapezoid(vals, t) = sum((vals[begin + 1:end] .+ vals[begin:end - 1]) ./ 2 .* diff(t))
+
 @testset "Augmented RODE" begin
     @testset "Linear OOP" begin
         f = function (u, p, t, W)
@@ -29,9 +33,9 @@ using SciMLBase: EnsembleProblem
         @test length(augsol.u[begin]) == 4
         @test augsol.u[begin].fwd == augsol.u[begin].bwd == u0
         @test augsol.t ≈ augsol.W.t
-        @test augsol.u[end].lfwd ≈ sum(M.(f.(getindex.(augsol.u, :fwd), p, augsol.t, first.(augsol.W.u)), getindex.(augsol.u, :fwd), p, augsol.t, first.(augsol.W.u))[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
+        @test augsol.u[end].lfwd ≈ trapezoid(M.(f.(getindex.(augsol.u, :fwd), p, augsol.t, first.(augsol.W.u)), getindex.(augsol.u, :fwd), p, augsol.t, first.(augsol.W.u)), augsol.t) rtol = 1e-3
         # the backward direction has its own noise, the last entry of the augmented noise
-        @test augsol.u[end].lbwd ≈ sum(M.(f.(getindex.(augsol.u, :bwd), p, augsol.t, last.(augsol.W.u)), getindex.(augsol.u, :bwd), p, augsol.t, last.(augsol.W.u))[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
+        @test augsol.u[end].lbwd ≈ trapezoid(M.(f.(getindex.(augsol.u, :bwd), p, augsol.t, last.(augsol.W.u)), getindex.(augsol.u, :bwd), p, augsol.t, last.(augsol.W.u)), augsol.t) rtol = 1e-3
         @test augsol.u[begin].lfwd ≈ 0.0
         @test augsol.u[begin].lbwd ≈ 0.0
 
@@ -40,7 +44,7 @@ using SciMLBase: EnsembleProblem
         @test length(augsol.u[begin]) == 2
         @test augsol.u[begin].fwd == u0
         @test augsol.u[begin].lfwd ≈ 0.0
-        @test augsol.u[end].lfwd ≈ sum(M.(f.(getindex.(augsol.u, :fwd), p, augsol.t, first.(augsol.W.u)), getindex.(augsol.u, :fwd), p, augsol.t, first.(augsol.W.u))[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
+        @test augsol.u[end].lfwd ≈ trapezoid(M.(f.(getindex.(augsol.u, :fwd), p, augsol.t, first.(augsol.W.u)), getindex.(augsol.u, :fwd), p, augsol.t, first.(augsol.W.u)), augsol.t) rtol = 1e-3
 
         augprob = @test_nowarn augmentprob(prob, M; direction = :backward)
         augsol = @test_nowarn solve(augprob, RandomHeun(), dt=1/100, save_noise=true)
@@ -48,7 +52,7 @@ using SciMLBase: EnsembleProblem
         @test augsol.u[begin].bwd == u0
         @test augsol.u[begin].lbwd ≈ 0.0
         # the backward direction has its own noise, the last entry of the augmented noise
-        @test augsol.u[end].lbwd ≈ sum(M.(f.(getindex.(augsol.u, :bwd), p, augsol.t, last.(augsol.W.u)), getindex.(augsol.u, :bwd), p, augsol.t, last.(augsol.W.u))[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
+        @test augsol.u[end].lbwd ≈ trapezoid(M.(f.(getindex.(augsol.u, :bwd), p, augsol.t, last.(augsol.W.u)), getindex.(augsol.u, :bwd), p, augsol.t, last.(augsol.W.u)), augsol.t) rtol = 1e-3
 
         @test_throws ArgumentError augmentprob(prob, M; direction = :blah)
     end
@@ -86,8 +90,8 @@ using SciMLBase: EnsembleProblem
         # each direction has its own noise: the first `n` entries forward, the last `n` backward
         Wfwd = [W[1:n] for W in augsol.W.u]
         Wbwd = [W[n+1:2n] for W in augsol.W.u]
-        @test augsol.u[end].lfwd ≈ sum(M.(f.(getindex.(augsol.u, :fwd)) .+ p .* Wfwd, getindex.(augsol.u, :fwd), p, augsol.t, Wfwd)[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
-        @test augsol.u[end].lbwd ≈ sum(M.(f.(getindex.(augsol.u, :bwd)) .+ p .* Wbwd, getindex.(augsol.u, :bwd), p, augsol.t, Wbwd)[begin + 1:end] .* (augsol.t[begin + 1:end] - augsol.t[begin:end-1])) rtol = 0.01
+        @test augsol.u[end].lfwd ≈ trapezoid(M.(f.(getindex.(augsol.u, :fwd)) .+ p .* Wfwd, getindex.(augsol.u, :fwd), p, augsol.t, Wfwd), augsol.t) rtol = 1e-3
+        @test augsol.u[end].lbwd ≈ trapezoid(M.(f.(getindex.(augsol.u, :bwd)) .+ p .* Wbwd, getindex.(augsol.u, :bwd), p, augsol.t, Wbwd), augsol.t) rtol = 1e-3
     end
 
     @testset "Default noise" begin

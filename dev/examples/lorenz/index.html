@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="referrer" content="no-referrer"/><title>Lorenz system · LagrangianDescriptors.jl</title><meta name="title" content="Lorenz system · LagrangianDescriptors.jl"/><meta property="og:title" content="Lorenz system · LagrangianDescriptors.jl"/><meta property="twitter:title" content="Lorenz system · LagrangianDescriptors.jl"/><meta name="description" content="Documentation for LagrangianDescriptors.jl."/><meta property="og:description" content="Documentation for LagrangianDescriptors.jl."/><meta property="twitter:description" content="Documentation for LagrangianDescriptors.jl."/><meta property="og:url" content="https://juliadynamics.github.io/LagrangianDescriptors.jl/stable/examples/lorenz/"/><meta property="twitter:url" content="https://juliadynamics.github.io/LagrangianDescriptors.jl/stable/examples/lorenz/"/><link rel="canonical" href="https://juliadynamics.github.io/LagrangianDescriptors.jl/stable/examples/lorenz/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.63.2/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/documentercitations/citations-hover.css" rel="stylesheet" type="text/css"/><link href="../../assets/documentercitations/citations.css" rel="stylesheet" type="text/css"/><link href="https://fonts.googleapis.com/css?family=Montserrat|Source+Code+Pro&amp;display=swap" rel="stylesheet" type="text/css"/><script src="../../assets/documentercitations/citations-data.js"></script><script src="../../assets/documentercitations/citations-hover.js"></script><script src="../../assets/documentercitations/citations-backlinks.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">LagrangianDescriptors.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Overview</a></li><li><a class="tocitem" href="../../method/">The method of Lagrangian descriptors</a></li><li><a class="tocitem" href="../../choosing/">Choosing the descriptor and the time window</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../../tutorial_ODEs/">ODEs</a></li><li><a class="tocitem" href="../../tutorial_RODEs/">RODEs</a></li><li><a class="tocitem" href="../../tutorial_SDEs/">SDEs</a></li><li><a class="tocitem" href="../../postprocessing/">Alternative via post-processing</a></li></ul></li><li><a class="tocitem" href="../../plotting/">Plotting</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="../">Overview</a></li><li><a class="tocitem" href="../saddle/">Saddle point</a></li><li><a class="tocitem" href="../pendulum/">Pendulum</a></li><li><a class="tocitem" href="../vanderpol/">Van der Pol oscillator</a></li><li><a class="tocitem" href="../doublegyre/">Double gyre</a></li><li class="is-active"><a class="tocitem" href>Lorenz system</a><ul class="internal"><li><a class="tocitem" href="#Initial-conditions-on-the-wings-of-the-attractor"><span>Initial conditions on the wings of the attractor</span></a></li><li><a class="tocitem" href="#Sweeping-through-the-attractor"><span>Sweeping through the attractor</span></a></li></ul></li><li><a class="tocitem" href="../doublependulum/">Double pendulum</a></li><li><a class="tocitem" href="../stochastic_duffing/">Stochastic Duffing equation</a></li></ul></li><li><a class="tocitem" href="../../api/">API</a></li><li><a class="tocitem" href="../../references/">References</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Lorenz system</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Lorenz system</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/JuliaDynamics/LagrangianDescriptors.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/JuliaDynamics/LagrangianDescriptors.jl/blob/main/docs/src/examples/lorenz.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Lorenz-system"><a class="docs-heading-anchor" href="#Lorenz-system">Lorenz system</a><a id="Lorenz-system-1"></a><a class="docs-heading-anchor-permalink" href="#Lorenz-system" title="Permalink"></a></h1><p>The Lorenz system</p><p class="math-container">\[\begin{cases}
+  \dot x = \sigma (y - x), \\
+  \dot y = x (\rho - z) - y, \\
+  \dot z = x y - \beta z,
+\end{cases}\]</p><p>with <span>$\sigma = 10$</span>, <span>$\rho = 28$</span> and <span>$\beta = 8/3$</span>, has a chaotic attractor. Its phase space is three-dimensional, so we compute the Lagrangian descriptors on a two-dimensional slice of initial conditions, here the plane <span>$z = 27$</span>, through the nontrivial fixed points <span>$(\pm\sqrt{72}, \pm\sqrt{72}, 27)$</span>. The plot recipe recognizes the grid in the components that vary, <span>$x$</span> and <span>$y$</span>.</p><p>Backward in time, the volumes of phase space expand and the solutions diverge, so we only compute the forward descriptors, which reveal the stable manifolds.</p><pre><code class="language-julia hljs">using LagrangianDescriptors, OrdinaryDiffEq, CairoMakie
+using LinearAlgebra: norm
+
+function lorenz!(du, u, p, t)
+    σ, ρ, β = p
+    x, y, z = u
+    du[1] = σ * (y - x)
+    du[2] = x * (ρ - z) - y
+    du[3] = x * y - β * z
+end
+
+prob = ODEProblem(lorenz!, zeros(3), (0.0, 1.5), (10.0, 28.0, 8 / 3))
+
+M(du, u, p, t) = norm(du)
+uu0 = [[x, y, 27.0] for y in range(-25, 25, length = 201), x in range(-20, 20, length = 201)]
+
+lagsol = solve(LagrangianDescriptorProblem(prob, M, uu0; direction = :forward), Tsit5())
+
+fig, ax, plt = heatmap(lagsol; axis = (title = &quot;slice z = 27&quot;, xlabel = &quot;x&quot;, ylabel = &quot;y&quot;))
+Colorbar(fig[1, 2], plt; label = &quot;forward Lagrangian descriptor&quot;)
+fig</code></pre><img src="2b6cccb3.png" alt="Example block output" width="800" height="400"/><p>The dark regions around the fixed points are the solutions that stay close to them, and the sharp curves are the intersections of the stable manifold of the origin, which separates the two wings of the attractor, with the plane. With a longer time window, more of its folds appear, but they also become thinner.</p><p>Other slices are obtained with other collections of initial conditions, and the keyword <code>idxs</code> chooses the components to plot. For instance, on the plane <span>$y = 0$</span>:</p><pre><code class="language-julia hljs">uu0_xz = [[x, 0.0, z] for z in range(0, 50, length = 201), x in range(-20, 20, length = 201)]
+
+lagsol_xz = solve(LagrangianDescriptorProblem(prob, M, uu0_xz; direction = :forward), Tsit5())
+
+fig, ax, plt = heatmap(lagsol_xz; idxs = (1, 3), axis = (title = &quot;slice y = 0&quot;, xlabel = &quot;x&quot;, ylabel = &quot;z&quot;))
+Colorbar(fig[1, 2], plt; label = &quot;forward Lagrangian descriptor&quot;)
+fig</code></pre><img src="e3cc316b.png" alt="Example block output" width="800" height="400"/><p>The two slices can also be seen together in three dimensions, with three components in <code>idxs</code>, and a common <code>colorrange</code>, so that their colors are comparable. CairoMakie, however, draws each plot over the previous ones, without hiding the parts that should be behind, so we split each plane at the line where they intersect, here through the middle of both, and draw the four half-planes from the farthest to the nearest, for the default view of <code>Axis3</code>. (GLMakie and WGLMakie hide the parts behind by themselves.)</p><pre><code class="language-julia hljs">solve_forward(uu0) = solve(LagrangianDescriptorProblem(prob, M, uu0; direction = :forward), Tsit5())
+
+xs = range(-20, 20, length = 201)
+# the plane z = 27, split at y = 0, and the plane y = 0, split at z = 27
+back_of_z27 = solve_forward([[x, y, 27.0] for y in range(0, 27, length = 101), x in xs])
+front_of_z27 = solve_forward([[x, y, 27.0] for y in range(-27, 0, length = 101), x in xs])
+top_of_y0 = solve_forward([[x, 0.0, z] for z in range(27, 54, length = 101), x in xs])
+bottom_of_y0 = solve_forward([[x, 0.0, z] for z in range(0, 27, length = 101), x in xs])
+
+# from the farthest to the nearest
+halves = (back_of_z27, bottom_of_y0, top_of_y0, front_of_z27)
+colorrange = extrema(reduce(vcat, [lagsol() for lagsol in halves]))
+
+fig = Figure(size = (700, 550))
+ax = Axis3(fig[1, 1]; title = &quot;slices z = 27 and y = 0&quot;, xlabel = &quot;x&quot;, ylabel = &quot;y&quot;, zlabel = &quot;z&quot;, viewmode = :fit)
+plts = [plot!(ax, lagsol; idxs = (1, 2, 3), colorrange) for lagsol in halves]
+Colorbar(fig[1, 2], plts[1]; label = &quot;forward Lagrangian descriptor&quot;)
+fig</code></pre><img src="482ed687.png" alt="Example block output" width="700" height="550"/><p>Any of the half-planes can be hidden, e.g. with <code>plts[4].visible = false</code> for the front one, to see the ones behind it. The axis then only spans the visible ones, unless its limits are given, e.g. with <code>limits = ((-20, 20), (-27, 27), (0, 54))</code> in <code>Axis3</code>.</p><h2 id="Initial-conditions-on-the-wings-of-the-attractor"><a class="docs-heading-anchor" href="#Initial-conditions-on-the-wings-of-the-attractor">Initial conditions on the wings of the attractor</a><a id="Initial-conditions-on-the-wings-of-the-attractor-1"></a><a class="docs-heading-anchor-permalink" href="#Initial-conditions-on-the-wings-of-the-attractor" title="Permalink"></a></h2><p>The initial conditions need not be on a plane. Each wing of the Lorenz attractor is close to a plane, and the two planes meet along a line below the attractor, forming an inverted wedge. We find these planes from a long solution on the attractor: the plane of each wing passes through the mean of its points, and its normal is the direction in which they vary the least, given by a singular value decomposition.</p><pre><code class="language-julia hljs">using LinearAlgebra: svd, normalize, cross, dot
+
+# a long solution on the attractor, without its transient
+sol = solve(remake(prob; u0 = [1.0, 1.0, 1.0], tspan = (0.0, 100.0)), Tsit5(); saveat = 0.01)
+points = sol.u[sol.t .&gt; 10]
+points_pos = filter(u -&gt; u[1] &gt; 0, points) # the wing with x &gt; 0
+points_neg = filter(u -&gt; u[1] &lt; 0, points) # the wing with x &lt; 0
+
+# the plane of a wing, through the mean `c` of its points, with normal `n`
+function wing_plane(points)
+    c = sum(points) / length(points)
+    n = svd(reduce(hcat, points .- Ref(c))&#39;).V[:, 3]
+    return (; c, n)
+end
+plane_pos = wing_plane(points_pos)
+plane_neg = wing_plane(points_neg)
+
+# the line where the two planes meet, through `o` in the direction `d`
+d = normalize(cross(plane_pos.n, plane_neg.n))
+o = [plane_pos.n&#39;; plane_neg.n&#39;; d&#39;] \ [dot(plane_pos.n, plane_pos.c), dot(plane_neg.n, plane_neg.c), 0.0]</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">3-element Vector{Float64}:
+  0.025189554093966147
+  0.09515067623710814
+ 15.050628363075255</code></pre><p>The two planes meet along the line through <code>o</code>, at the height <span>$z \approx 15$</span>, in the horizontal direction <code>d</code>. On each plane, we take a grid of initial conditions starting at this line and covering the points of the wing, and we compute the forward descriptors:</p><pre><code class="language-julia hljs"># a grid on the plane of a wing, from the line where the planes meet, covering its points
+function wing_grid(plane, points)
+    w = normalize((plane.c - o) - dot(plane.c - o, d) * d) # in the plane, away from the line
+    along = extrema(dot(u - o, d) for u in points)
+    away = maximum(dot(u - o, w) for u in points)
+    return [o + a * d + b * w for b in range(0, away, length = 101), a in range(along..., length = 151)]
+end
+
+lagsol_pos = solve_forward(wing_grid(plane_pos, points_pos))
+lagsol_neg = solve_forward(wing_grid(plane_neg, points_neg))
+colorrange = extrema(vcat(lagsol_pos(), lagsol_neg()))
+
+fig = Figure(size = (1200, 650))
+axes = [Axis3(fig[1, k]; azimuth, elevation = 0.1π, aspect = :data, viewmode = :fit,
+        xlabel = &quot;x&quot;, ylabel = &quot;y&quot;, zlabel = &quot;z&quot;, xticks = -20:20:20, yticks = -20:20:20)
+    for (k, azimuth) in enumerate((1.45π, 1.7π))]
+# from these views, the wing with x &lt; 0 is the nearest, so it is drawn last
+plts = [plot!(ax, lagsol; idxs = (1, 2, 3), colorrange) for ax in axes for lagsol in (lagsol_pos, lagsol_neg)]
+Colorbar(fig[1, 3], plts[1]; label = &quot;forward Lagrangian descriptor&quot;)
+fig</code></pre><img src="33f5f8fc.png" alt="Example block output" width="1200" height="650"/><p>On each wing, the dark spot is the fixed point of that wing, and the descriptors show the folds of the stable manifold of the origin crossing the wing, around which the solutions turn before switching to the other wing.</p><h2 id="Sweeping-through-the-attractor"><a class="docs-heading-anchor" href="#Sweeping-through-the-attractor">Sweeping through the attractor</a><a id="Sweeping-through-the-attractor-1"></a><a class="docs-heading-anchor-permalink" href="#Sweeping-through-the-attractor" title="Permalink"></a></h2><p>Two sequences of slices sweep through the attractor: horizontal slices <span>$z = c$</span>, for increasing values of <span>$c$</span>, and then vertical slices <span>$x = c$</span>, also for increasing values of <span>$c$</span>. We compute the forward descriptors on each slice, with a common color range, so that the slices are comparable:</p><pre><code class="language-julia hljs">heights = 5:45     # the horizontal slices z = c
+abscissas = -20:20 # the vertical slices x = c
+xs = range(-20, 20, length = 151)
+ys = range(-25, 25, length = 151)
+zs = range(0, 50, length = 151)
+horizontal = [solve_forward([[x, y, c] for y in ys, x in xs]) for c in heights]
+vertical = [solve_forward([[c, y, z] for z in zs, y in ys]) for c in abscissas]
+colorrange = extrema(reduce(vcat, [lagsol() for lagsol in [horizontal; vertical]]))</code></pre><p>We show them in a video, with each slice next to the attractor, cut by the plane of the slice. The current frame is an <code>Observable</code>, which updates the figure in each frame recorded with <code>record</code>, with a plane and a heatmap for the horizontal slices, and others for the vertical ones, shown in turn. Since CairoMakie draws each plot over the previous ones, the part of the attractor behind the plane is drawn before it, and the part in front of it after it, with <code>NaN</code> to break the lines:</p><pre><code class="language-julia hljs"># the frames: the horizontal slices, and then the vertical ones
+frames = [[(:z, i) for i in eachindex(heights)]; [(:x, i) for i in eachindex(abscissas)]]
+frame = Observable(frames[1])
+
+# seen from above and from x &gt; c, behind a horizontal plane is below it, and behind
+# a vertical plane x = c is x &lt; c
+is_behind((direction, i), u) = direction == :z ? u[3] &lt;= heights[i] : u[1] &lt;= abscissas[i]
+points_on_attractor = Point3f.(points) # from the long solution of the previous section
+behind = @lift([is_behind($frame, u) ? u : Point3f(NaN) for u in points_on_attractor])
+in_front = @lift([is_behind($frame, u) ? Point3f(NaN) : u for u in points_on_attractor])
+
+fig = Figure(size = (1000, 500))
+ax3 = Axis3(fig[1, 1]; title = &quot;the attractor and the slice&quot;, xlabel = &quot;x&quot;, ylabel = &quot;y&quot;, zlabel = &quot;z&quot;,
+    azimuth = 1.7π, elevation = 0.12π, viewmode = :fit, xticks = -20:20:20, yticks = -20:20:20)
+lines!(ax3, behind; color = :gray30, linewidth = 0.5)
+zplane = mesh!(ax3, @lift(Rect3f(Vec3f(-20, -25, heights[$frame[1] == :z ? $frame[2] : 1]), Vec3f(40, 50, 0.2)));
+    color = (:orange, 0.4), shading = false)
+xplane = mesh!(ax3, @lift(Rect3f(Vec3f(abscissas[$frame[1] == :x ? $frame[2] : 1], -25, 0), Vec3f(0.2, 50, 50)));
+    color = (:orange, 0.4), shading = false)
+lines!(ax3, in_front; color = :gray30, linewidth = 0.5)
+
+ax = Axis(fig[1, 2]; aspect = DataAspect(),
+    title = @lift($frame[1] == :z ? &quot;slice z = $(heights[$frame[2]])&quot; : &quot;slice x = $(abscissas[$frame[2]])&quot;),
+    xlabel = @lift($frame[1] == :z ? &quot;x&quot; : &quot;y&quot;), ylabel = @lift($frame[1] == :z ? &quot;y&quot; : &quot;z&quot;))
+zheatmap = heatmap!(ax, @lift(horizontal[$frame[1] == :z ? $frame[2] : 1]); colorrange)
+xheatmap = heatmap!(ax, @lift(vertical[$frame[1] == :x ? $frame[2] : 1]); idxs = (2, 3), colorrange)
+Colorbar(fig[1, 3], zheatmap; label = &quot;forward Lagrangian descriptor&quot;)
+colgap!(fig.layout, 1, 50) # room between the z label of the 3D axis and the heatmap
+
+record(fig, &quot;lorenz_sweeps.mp4&quot;, frames; framerate = 8, px_per_unit = 1) do f
+    frame[] = f
+    zplane.visible = zheatmap.visible = f[1] == :z
+    xplane.visible = xheatmap.visible = f[1] == :x
+    reset_limits!(ax)
+end</code></pre><video src="lorenz_sweeps.mp4" autoplay loop muted playsinline controls style="width: 100%"></video><p>At the bottom of the attractor, the horizontal slices cut the stable manifold of the origin, a surface containing the <span>$z$</span> axis, along a single curve through the origin. Going up, they cross the two wings, and the folds of this manifold wind around the dark regions of each wing, with the whole pattern turning as <span>$z$</span> increases. The vertical slices then cross the wings from the side, one after the other, with the dark region of each wing and the folds around it.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../doublegyre/">« Double gyre</a><a class="docs-footer-nextpage" href="../doublependulum/">Double pendulum »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.20.0 on <span class="colophon-date" title="Saturday 14 November 2026 13:21">Saturday 14 November 2026</span>. Using Julia version 1.13.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

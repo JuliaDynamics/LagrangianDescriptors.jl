@@ -130,3 +130,48 @@ fig
 ```
 
 On each wing, the dark spot is the fixed point of that wing, and the descriptors show the folds of the stable manifold of the origin crossing the wing, around which the solutions turn before switching to the other wing.
+
+## Sweeping through the attractor
+
+A sequence of horizontal slices ``z = c``, for increasing values of ``c``, sweeps through the attractor. We compute the forward descriptors on each slice, with a common color range, so that the slices are comparable:
+
+```@example lorenz
+zs = 5:45
+xs = range(-20, 20, length = 151)
+ys = range(-25, 25, length = 151)
+slices = [solve_forward([[x, y, z] for y in ys, x in xs]) for z in zs]
+colorrange = extrema(reduce(vcat, [lagsol() for lagsol in slices]))
+nothing # hide
+```
+
+We show them in a video, with each slice next to the attractor, cut by the plane of the slice. The frame `k` is an `Observable`, which updates the figure in each frame recorded with `record`. Since CairoMakie draws each plot over the previous ones, the part of the attractor below the plane is drawn before it, and the part above it after it, with `NaN` to break the lines:
+
+```@example lorenz
+k = Observable(1) # the index of the slice in the frame
+points_on_attractor = Point3f.(points) # from the long solution of the previous section
+below = @lift([u[3] <= zs[$k] ? u : Point3f(NaN) for u in points_on_attractor])
+above = @lift([u[3] > zs[$k] ? u : Point3f(NaN) for u in points_on_attractor])
+
+fig = Figure(size = (1000, 500))
+ax3 = Axis3(fig[1, 1]; title = "the attractor and the slice", xlabel = "x", ylabel = "y", zlabel = "z",
+    azimuth = 1.7π, elevation = 0.12π, viewmode = :fit, xticks = -20:20:20, yticks = -20:20:20)
+lines!(ax3, below; color = :gray30, linewidth = 0.5)
+mesh!(ax3, @lift(Rect3f(Vec3f(-20, -25, zs[$k]), Vec3f(40, 50, 0.2))); color = (:orange, 0.4))
+lines!(ax3, above; color = :gray30, linewidth = 0.5)
+ax = Axis(fig[1, 2]; title = @lift("slice z = $(zs[$k])"), xlabel = "x", ylabel = "y", aspect = DataAspect())
+plt = heatmap!(ax, @lift(slices[$k]); colorrange)
+Colorbar(fig[1, 3], plt; label = "forward Lagrangian descriptor")
+
+record(fig, "lorenz_slices.mp4", eachindex(zs); framerate = 8, px_per_unit = 1) do i
+    k[] = i
+end
+# the page is `lorenz.html` in local builds, and `lorenz/index.html` with pretty URLs # hide
+mkpath("lorenz"); cp("lorenz_slices.mp4", joinpath("lorenz", "lorenz_slices.mp4"); force = true) # hide
+nothing # hide
+```
+
+```@raw html
+<video src="lorenz_slices.mp4" autoplay loop muted playsinline controls style="width: 100%"></video>
+```
+
+At the bottom of the attractor, the slices cut the stable manifold of the origin, a surface containing the ``z`` axis, along a single curve through the origin. Going up, they cross the two wings, and the folds of this manifold wind around the dark regions of each wing, with the whole pattern turning as ``z`` increases.

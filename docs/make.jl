@@ -24,6 +24,7 @@ pages = [
         "Van der Pol oscillator" => "examples/vanderpol.md",
         "Double gyre" => "examples/doublegyre.md",
         "Lorenz system" => "examples/lorenz.md",
+        "Langford system" => "examples/langford.md",
         "Double pendulum" => "examples/doublependulum.md",
         "Stochastic Duffing equation" => "examples/stochastic_duffing.md",
     ],

@@ -9,6 +9,7 @@ A gallery of examples of the method of Lagrangian descriptors, from simple syste
 | [Van der Pol oscillator](vanderpol.md) | limit cycle; solutions diverging backward in time |
 | [Double gyre](doublegyre.md) | time-dependent fluid flow; lobes and transport |
 | [Lorenz system](lorenz.md) | three-dimensional chaotic system; two-dimensional slices of initial conditions |
+| [Langford system](langford.md) | route to chaos through a periodic orbit and a torus; a sweep of a parameter |
 | [Double pendulum](doublependulum.md) | four-dimensional chaotic Hamiltonian system |
 | [Stochastic Duffing equation](stochastic_duffing.md) | stochastic differential equation, with multiplicative noise; a single realization and the mean over realizations |
 
